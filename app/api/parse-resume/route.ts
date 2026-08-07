@@ -125,7 +125,7 @@ function quotaResponse() {
 
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
   if (!apiKey) {
     return NextResponse.json(
@@ -170,7 +170,6 @@ ${text}`,
         },
       ],
       generationConfig: {
-        temperature: 0,
         responseMimeType: "application/json",
         responseSchema: resumeSchema,
       },
