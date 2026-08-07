@@ -217,6 +217,7 @@ export function ResumeTool() {
   const [photo, setPhoto] = useState("");
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [hasCanvas, setHasCanvas] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isBlind = layout === "blind";
@@ -225,13 +226,17 @@ export function ResumeTool() {
   const experience = useMemo(() => toList(data.experience), [data.experience]);
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
+  const contactDetails = [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => setPhoto(String(reader.result || ""));
+    reader.onload = () => {
+      setPhoto(String(reader.result || ""));
+      setHasCanvas(true);
+    };
     reader.readAsDataURL(file);
   }
 
@@ -270,6 +275,7 @@ export function ResumeTool() {
       }
 
       setData(payload.data);
+      setHasCanvas(true);
     } catch {
       setAiError("AI auto-fill could not connect right now. Please try again or use basic auto-fill.");
     } finally {
@@ -277,11 +283,23 @@ export function ResumeTool() {
     }
   }
 
+  function handleBasicParse() {
+    setData(parseCandidateText(rawText));
+    setHasCanvas(true);
+  }
+
+  function handleLoadExample() {
+    setRawText(samplePrompt);
+    setData(parseCandidateText(samplePrompt));
+    setHasCanvas(true);
+    setAiError("");
+  }
+
   return (
     <section className="resume-tool" id="tools" aria-label="Resume formatter tool">
       <div className="tool-heading">
         <h1>Resume Formatter</h1>
-        <p>Paste candidate information, populate the template, proofread, then export a client-ready PDF.</p>
+        <p>Paste candidate information, populate the template, review, then export a client-ready PDF.</p>
       </div>
 
       <div className="tool-workspace">
@@ -301,10 +319,10 @@ export function ResumeTool() {
             <button type="button" className="primary-button" onClick={handleAiParse} disabled={isAiParsing}>
               {isAiParsing ? "Reading with AI..." : "AI auto-fill"}
             </button>
-            <button type="button" className="ghost-button" onClick={() => setData(parseCandidateText(rawText))}>
+            <button type="button" className="ghost-button" onClick={handleBasicParse}>
               Basic auto-fill
             </button>
-            <button type="button" className="ghost-button" onClick={() => setRawText(samplePrompt)}>
+            <button type="button" className="ghost-button" onClick={handleLoadExample}>
               Load example
             </button>
           </div>
@@ -344,17 +362,24 @@ export function ResumeTool() {
         </div>
 
         <div className="preview-panel">
-          <div className="preview-toolbar">
-            <div>
-              <strong>Proofing canvas</strong>
-              <span>{isBlind ? "Blind candidate layout" : "Full candidate layout"}</span>
+          {!hasCanvas ? (
+            <div className="canvas-empty">
+              <strong>Paste the candidate information</strong>
+              <p>Use AI auto-fill, Basic auto-fill, or Load example to create the proofing canvas.</p>
             </div>
-            <button type="button" className="primary-button" onClick={() => window.print()}>
-              Generate PDF
-            </button>
-          </div>
+          ) : (
+            <>
+              <div className="preview-toolbar">
+                <div>
+                  <strong>Proofing canvas</strong>
+                  <span>{isBlind ? "Blind candidate layout" : "Full candidate layout"}</span>
+                </div>
+                <button type="button" className="primary-button" onClick={() => window.print()}>
+                  Generate PDF
+                </button>
+              </div>
 
-          <div className="resume-document" aria-label="Resume preview">
+              <div className="resume-document" aria-label="Resume preview">
           <article className="resume-page" aria-label="Resume preview page 1">
             <header className="resume-header">
               <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
@@ -362,13 +387,10 @@ export function ResumeTool() {
 
             <section className="candidate-intro">
               <div>
-                <h3>{isBlind ? "Confidential Candidate Profile" : data.candidateName || "Candidate Name"}</h3>
-                <p>{data.title || "Current Title or Position Applying | Certificate | Geography Covered"}</p>
+                {isBlind ? <h3>Confidential Candidate Profile</h3> : data.candidateName ? <h3>{data.candidateName}</h3> : null}
+                {data.title ? <p>{data.title}</p> : null}
                 {!isBlind ? (
-                  <p className="contact-line">
-                    {[data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean).join(" | ") ||
-                      "Location | M: (+971) _____________ | Email: _______________ | LinkedIn"}
-                  </p>
+                  contactDetails.length ? <p className="contact-line">{contactDetails.join(" | ")}</p> : null
                 ) : (
                   <p className="contact-line">Identity hidden for client review</p>
                 )}
@@ -380,25 +402,33 @@ export function ResumeTool() {
               ) : null}
             </section>
 
-            <ResumeSection title="Executive Summary OR Summary">
-              <p>{data.summary || "Text to be added"}</p>
-            </ResumeSection>
+            {data.summary ? (
+              <ResumeSection title="Executive Summary OR Summary">
+                <p>{data.summary}</p>
+              </ResumeSection>
+            ) : null}
 
-            <ResumeSection title="Career Highlights">
-              <BulletList items={highlights} fallback="Text to be added" />
-            </ResumeSection>
+            {highlights.length ? (
+              <ResumeSection title="Career Highlights">
+                <BulletList items={highlights} />
+              </ResumeSection>
+            ) : null}
 
-            <ResumeSection title="Core Expertise">
-              <div className="expertise-grid">
-                {(expertise.length ? expertise : ["Skill 1", "Skill 2", "Skill 3", "Skill 4"]).slice(0, 8).map((skill) => (
-                  <span key={skill}>{skill}</span>
-                ))}
-              </div>
-            </ResumeSection>
+            {expertise.length ? (
+              <ResumeSection title="Core Expertise">
+                <div className="expertise-grid">
+                  {expertise.slice(0, 8).map((skill) => (
+                    <span key={skill}>{skill}</span>
+                  ))}
+                </div>
+              </ResumeSection>
+            ) : null}
 
-            <ResumeSection title="Professional Experience">
-              <BulletList items={experience} fallback="Company Name (Duration Dates)\nCurrent Title - Location\nBullets to be added" />
-            </ResumeSection>
+            {experience.length ? (
+              <ResumeSection title="Professional Experience">
+                <BulletList items={experience} />
+              </ResumeSection>
+            ) : null}
             <ResumeFooter page="1" />
           </article>
 
@@ -406,24 +436,34 @@ export function ResumeTool() {
             <header className="resume-header second-page">
               <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
             </header>
-            <ResumeSection title="Achievements">
-              <BulletList items={achievements} fallback="Bullets to be added" />
-            </ResumeSection>
+            {achievements.length ? (
+              <ResumeSection title="Achievements">
+                <BulletList items={achievements} />
+              </ResumeSection>
+            ) : null}
 
-            <ResumeSection title="Education / Certification / Qualifications">
-              <BulletList items={education} fallback="Bullets to be added" />
-            </ResumeSection>
+            {education.length ? (
+              <ResumeSection title="Education / Certification / Qualifications">
+                <BulletList items={education} />
+              </ResumeSection>
+            ) : null}
 
-            <ResumeSection title="Technology / Additional Skills / Language">
-              <p>{data.additionalSkills || "Text to be added"}</p>
-            </ResumeSection>
+            {data.additionalSkills ? (
+              <ResumeSection title="Technology / Additional Skills / Language">
+                <p>{data.additionalSkills}</p>
+              </ResumeSection>
+            ) : null}
 
-            <ResumeSection title="Alignment with the role applying">
-              <p>{data.alignment || "Text to be added"}</p>
-            </ResumeSection>
+            {data.alignment ? (
+              <ResumeSection title="Alignment with the role applying">
+                <p>{data.alignment}</p>
+              </ResumeSection>
+            ) : null}
             <ResumeFooter page="2" />
           </article>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>
@@ -448,11 +488,10 @@ function ResumeSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-function BulletList({ items, fallback }: { items: string[]; fallback: string }) {
-  const list = items.length ? items : fallback.split("\n");
+function BulletList({ items }: { items: string[] }) {
   return (
     <ul>
-      {list.map((item) => (
+      {items.map((item) => (
         <li key={item}>{item}</li>
       ))}
     </ul>

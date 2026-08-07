@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ToolSearch } from "./tool-search";
 
 export default function Home() {
   return (
@@ -13,12 +13,20 @@ export default function Home() {
             </span>
           </a>
         </nav>
+
+        <div className="hero-copy">
+          <p className="eyebrow">Internal automation hub</p>
+          <h1>TBBT tools, built inside the BlackBox experience.</h1>
+          <p className="hero-lede">
+            A branded workspace for day-to-day recruitment automation, ready to
+            host each tool as we add it: intake, shortlisting, screening,
+            reporting, and client delivery.
+          </p>
+        </div>
       </section>
 
-      <section className="tools-grid" aria-label="Automation tools">
-        <Link className="tool-card" href="/tools/resume-formatter">
-          <span>Resume Formatter</span>
-        </Link>
+      <section className="tools-section" aria-label="Automation tools">
+        <ToolSearch />
       </section>
     </main>
   );
