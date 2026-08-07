@@ -215,6 +215,8 @@ export function ResumeTool() {
   const [data, setData] = useState<ResumeData>(emptyResume);
   const [layout, setLayout] = useState<"full" | "blind">("full");
   const [photo, setPhoto] = useState("");
+  const [isAiParsing, setIsAiParsing] = useState(false);
+  const [aiError, setAiError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isBlind = layout === "blind";
@@ -231,6 +233,48 @@ export function ResumeTool() {
     const reader = new FileReader();
     reader.onload = () => setPhoto(String(reader.result || ""));
     reader.readAsDataURL(file);
+  }
+
+  function formatResetTime(resetAt: string) {
+    const date = new Date(resetAt);
+    if (Number.isNaN(date.getTime())) return "";
+
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZoneName: "short",
+    }).format(date);
+  }
+
+  async function handleAiParse() {
+    setAiError("");
+
+    if (!rawText.trim()) {
+      setAiError("Paste candidate information before using AI auto-fill.");
+      return;
+    }
+
+    setIsAiParsing(true);
+    try {
+      const response = await fetch("/api/parse-resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: rawText }),
+      });
+      const payload = (await response.json()) as { data?: ResumeData; error?: string; resetAt?: string };
+
+      if (!response.ok || !payload.data) {
+        const resetTime = payload.resetAt ? ` Try again after ${formatResetTime(payload.resetAt)}.` : "";
+        setAiError(`${payload.error || "AI auto-fill failed. Please try again."}${resetTime}`);
+        return;
+      }
+
+      setData(payload.data);
+    } catch {
+      setAiError("AI auto-fill could not connect right now. Please try again or use basic auto-fill.");
+    } finally {
+      setIsAiParsing(false);
+    }
   }
 
   return (
@@ -254,13 +298,17 @@ export function ResumeTool() {
           </label>
 
           <div className="button-row">
-            <button type="button" className="primary-button" onClick={() => setData(parseCandidateText(rawText))}>
-              Auto-fill canvas
+            <button type="button" className="primary-button" onClick={handleAiParse} disabled={isAiParsing}>
+              {isAiParsing ? "Reading with AI..." : "AI auto-fill"}
+            </button>
+            <button type="button" className="ghost-button" onClick={() => setData(parseCandidateText(rawText))}>
+              Basic auto-fill
             </button>
             <button type="button" className="ghost-button" onClick={() => setRawText(samplePrompt)}>
               Load example
             </button>
           </div>
+          {aiError ? <p className="tool-error">{aiError}</p> : null}
 
           <div className="layout-toggle" aria-label="Resume layout">
             <button type="button" className={layout === "full" ? "active" : ""} onClick={() => setLayout("full")}>
