@@ -1,3 +1,5 @@
+import { ResumeTool } from "./resume-tool";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-[#050506]">
@@ -24,19 +26,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="tools-section" id="tools" aria-label="Tools">
-        <article className="tool-card">
-          <div>
-            <span className="tool-number">Tool 01</span>
-            <h2>First automation tool</h2>
-            <p>
-              This card is ready for the first functionality. Once you share
-              the workflow, I will turn this into the working tool.
-            </p>
-          </div>
-          <span className="tool-status">Ready to build</span>
-        </article>
-      </section>
+      <ResumeTool />
     </main>
   );
 }
