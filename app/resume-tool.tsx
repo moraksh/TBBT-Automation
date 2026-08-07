@@ -412,9 +412,9 @@ export function ResumeTool() {
                         <p className="contact-line">Identity hidden for client review</p>
                       )}
                     </div>
-                    {!isBlind ? (
+                    {!isBlind && photo ? (
                       <div className="photo-frame">
-                        {photo ? <img className="candidate-photo" src={photo} alt="Candidate" /> : <span>Picture optional</span>}
+                        <img className="candidate-photo" src={photo} alt="Candidate" />
                       </div>
                     ) : null}
                   </section>
