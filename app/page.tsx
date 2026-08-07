@@ -1,10 +1,10 @@
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#050506] text-white">
+    <main className="min-h-screen bg-white text-[#050506]">
       <section className="hero-shell">
         <nav className="topbar" aria-label="Primary">
           <a className="brand" href="https://theblackboxtalent.com/">
-            <span className="brand-mark">T</span>
+            <span className="brand-mark" aria-hidden="true" />
             <span>
               <strong>The BlackBox Talent</strong>
               <small>Automation Command Center</small>
@@ -14,7 +14,7 @@ export default function Home() {
         </nav>
 
         <div className="hero-copy">
-          <p className="eyebrow">Internal automation hub</p>
+          <p className="eyebrow">Premium <span /> Internal automation hub</p>
           <h1>TBBT tools, built inside the BlackBox experience.</h1>
           <p className="hero-lede">
             A branded workspace for day-to-day recruitment automation, ready to

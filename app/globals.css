@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050506;
-  --foreground: #ffffff;
-  --muted: #b3afbd;
-  --purple: #b995ff;
-  --line: rgba(255, 255, 255, 0.13);
+  --background: #ffffff;
+  --foreground: #050506;
+  --muted: #5d5768;
+  --purple: #8f35ef;
+  --purple-dark: #613fe7;
+  --line: rgba(84, 49, 130, 0.14);
 }
 
 @theme inline {
@@ -36,18 +37,23 @@ a {
 }
 
 .hero-shell {
-  min-height: 100vh;
-  padding: clamp(24px, 5vw, 48px) clamp(23px, 5vw, 72px);
+  min-height: auto;
+  padding: 0;
   background:
-    radial-gradient(circle at 80% 14%, rgba(123, 63, 220, 0.23), transparent 35%),
-    linear-gradient(117deg, #050506 0%, #060607 46%, #150d24 100%);
+    radial-gradient(circle at 70% 30%, rgba(150, 83, 234, 0.24), transparent 34%),
+    linear-gradient(122deg, #ffffff 0%, #f7f1ff 57%, #efe2ff 100%);
+  border-bottom: 1px solid var(--line);
 }
 
 .topbar {
+  min-height: 112px;
+  padding: 0 clamp(28px, 5vw, 78px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(18, 12, 27, 0.08);
 }
 
 .brand {
@@ -58,16 +64,24 @@ a {
 }
 
 .brand-mark {
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 50%;
-  background: #ffffff;
-  color: #050506;
-  font-size: 25px;
-  font-weight: 900;
+  transform: rotate(45deg);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 52% 45%, #8f35ef 0 18%, #2f163f 32%, #06040a 70%);
+  box-shadow: 0 10px 26px rgba(143, 53, 239, 0.22);
+}
+
+.brand-mark::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .brand strong,
@@ -76,78 +90,95 @@ a {
 }
 
 .brand strong {
-  font-size: clamp(21px, 2.4vw, 25px);
+  font-size: clamp(21px, 2.2vw, 29px);
   line-height: 1.1;
 }
 
 .brand small {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: clamp(15px, 2vw, 18px);
+  margin-top: 6px;
+  color: #7a7483;
+  font-size: clamp(14px, 1.6vw, 17px);
   line-height: 1.25;
 }
 
 .nav-cta {
-  min-height: 66px;
-  padding: 0 clamp(24px, 4vw, 32px);
+  min-height: 54px;
+  padding: 0 clamp(22px, 4vw, 30px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #ffffff;
-  color: #050506;
-  font-size: clamp(17px, 2vw, 21px);
+  background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+  color: #ffffff;
+  font-size: clamp(16px, 1.8vw, 19px);
   font-weight: 800;
   white-space: nowrap;
+  box-shadow: 0 16px 30px rgba(97, 63, 231, 0.24);
 }
 
 .hero-copy {
-  max-width: 950px;
-  margin-top: clamp(94px, 14vw, 132px);
+  max-width: 820px;
+  padding: clamp(58px, 8vw, 82px) clamp(28px, 5vw, 78px) clamp(66px, 8vw, 92px);
 }
 
 .eyebrow {
+  width: fit-content;
   margin: 0 0 24px;
+  padding: 14px 22px;
+  border: 1px solid rgba(143, 53, 239, 0.13);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.46);
   color: var(--purple);
-  font-size: clamp(18px, 2.4vw, 23px);
+  font-size: clamp(13px, 1.3vw, 16px);
   font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
+.eyebrow span {
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  margin: 0 10px 2px;
+  border-radius: 50%;
+  background: var(--purple);
+}
+
 .hero-copy h1 {
-  max-width: 900px;
+  max-width: 780px;
   margin: 0;
-  font-size: clamp(54px, 8vw, 72px);
-  font-weight: 400;
-  line-height: 0.93;
+  color: #050506;
+  font-size: clamp(40px, 5.5vw, 64px);
+  font-weight: 700;
+  line-height: 1;
   letter-spacing: 0;
 }
 
 .hero-lede {
-  max-width: 940px;
-  margin: 38px 0 0;
-  color: #e0dce7;
-  font-size: clamp(22px, 3vw, 27px);
+  max-width: 760px;
+  margin: 26px 0 0;
+  color: #514c59;
+  font-size: clamp(18px, 2vw, 23px);
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .tools-section {
-  padding: clamp(32px, 6vw, 72px) clamp(23px, 5vw, 72px);
-  background: #050506;
+  padding: clamp(30px, 5vw, 56px) clamp(28px, 5vw, 78px);
+  background: #ffffff;
 }
 
 .tool-card {
-  max-width: 520px;
-  min-height: 220px;
-  padding: 26px;
+  max-width: 470px;
+  min-height: 190px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.055);
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(58, 30, 96, 0.08);
 }
 
 .tool-number {
@@ -159,8 +190,9 @@ a {
 }
 
 .tool-card h2 {
-  margin: 24px 0 12px;
-  font-size: clamp(27px, 4vw, 36px);
+  margin: 20px 0 10px;
+  color: #050506;
+  font-size: clamp(23px, 3vw, 30px);
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: 0;
@@ -168,8 +200,8 @@ a {
 
 .tool-card p {
   margin: 0;
-  color: #d8d3e1;
-  font-size: 17px;
+  color: #5d5768;
+  font-size: 16px;
   line-height: 1.55;
 }
 
@@ -178,8 +210,8 @@ a {
   margin-top: 28px;
   padding: 9px 12px;
   border-radius: 999px;
-  background: rgba(185, 149, 255, 0.16);
-  color: #dac7ff;
+  background: rgba(143, 53, 239, 0.12);
+  color: var(--purple);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -200,9 +232,8 @@ a {
   }
 
   .brand-mark {
-    width: 50px;
-    height: 50px;
-    font-size: 22px;
+    width: 38px;
+    height: 38px;
   }
 
   .nav-cta {
@@ -212,14 +243,14 @@ a {
   }
 
   .hero-copy {
-    margin-top: 76px;
+    padding-top: 48px;
   }
 
   .hero-copy h1 {
-    font-size: 44px;
+    font-size: 38px;
   }
 
   .hero-lede {
-    font-size: 20px;
+    font-size: 18px;
   }
 }
