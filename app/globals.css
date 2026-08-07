@@ -538,15 +538,15 @@ a {
 }
 
 .resume-document {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  display: grid;
+  gap: 18px;
+  align-items: start;
 }
 
 .resume-page {
   width: 794px;
   min-width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   position: relative;
   margin: 0 auto;
   padding: 56px 90px 74px;
@@ -555,6 +555,7 @@ a {
   color: #000000;
   box-shadow: 0 12px 34px rgba(28, 16, 44, 0.12);
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
 }
 
 .resume-header {
@@ -634,7 +635,7 @@ a {
 }
 
 .resume-section {
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 .resume-section h4 {
@@ -653,7 +654,7 @@ a {
 .resume-section li,
 .expertise-grid span {
   font-size: 9px;
-  line-height: 1.45;
+  line-height: 1.38;
 }
 
 .resume-section p {
@@ -777,7 +778,7 @@ a {
   .resume-page {
     width: 794px;
     min-width: 794px;
-    min-height: 1123px;
+    height: 1123px;
     padding: 56px 90px 74px;
   }
 
@@ -835,7 +836,7 @@ a {
   .resume-page {
     width: 210mm;
     min-width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
     margin: 0;
     border: 0;
     box-shadow: none;

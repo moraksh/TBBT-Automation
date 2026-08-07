@@ -185,6 +185,14 @@ function toList(value: string, splitCommas = false) {
     .filter(Boolean);
 }
 
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 function TextField({
   label,
   field,
@@ -227,6 +235,9 @@ export function ResumeTool() {
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
   const contactDetails = [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean);
+  const experiencePages = useMemo(() => chunkItems(experience, 14), [experience]);
+  const hasFinalPage = Boolean(achievements.length || education.length || data.additionalSkills || data.alignment);
+  const totalPages = 1 + experiencePages.length + (hasFinalPage ? 1 : 0);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -380,93 +391,103 @@ export function ResumeTool() {
               </div>
 
               <div className="resume-document" aria-label="Resume preview">
-          <article className="resume-page" aria-label="Resume preview page 1">
-            <header className="resume-header">
-              <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
-            </header>
+                <article className="resume-page" aria-label="Resume preview page 1">
+                  <ResumeHeader />
 
-            <section className="candidate-intro">
-              <div>
-                {isBlind ? <h3>Confidential Candidate Profile</h3> : data.candidateName ? <h3>{data.candidateName}</h3> : null}
-                {data.title ? <p>{data.title}</p> : null}
-                {!isBlind ? (
-                  contactDetails.length ? <p className="contact-line">{contactDetails.join(" | ")}</p> : null
-                ) : (
-                  <p className="contact-line">Identity hidden for client review</p>
-                )}
-              </div>
-              {!isBlind ? (
-                <div className="photo-frame">
-                  {photo ? <img className="candidate-photo" src={photo} alt="Candidate" /> : <span>Picture optional</span>}
-                </div>
-              ) : null}
-            </section>
+                  <section className="candidate-intro">
+                    <div>
+                      {isBlind ? <h3>Confidential Candidate Profile</h3> : data.candidateName ? <h3>{data.candidateName}</h3> : null}
+                      {data.title ? <p>{data.title}</p> : null}
+                      {!isBlind ? (
+                        contactDetails.length ? <p className="contact-line">{contactDetails.join(" | ")}</p> : null
+                      ) : (
+                        <p className="contact-line">Identity hidden for client review</p>
+                      )}
+                    </div>
+                    {!isBlind ? (
+                      <div className="photo-frame">
+                        {photo ? <img className="candidate-photo" src={photo} alt="Candidate" /> : <span>Picture optional</span>}
+                      </div>
+                    ) : null}
+                  </section>
 
-            {data.summary ? (
-              <ResumeSection title="Executive Summary OR Summary">
-                <p>{data.summary}</p>
-              </ResumeSection>
-            ) : null}
+                  {data.summary ? (
+                    <ResumeSection title="Executive Summary OR Summary">
+                      <p>{data.summary}</p>
+                    </ResumeSection>
+                  ) : null}
 
-            {highlights.length ? (
-              <ResumeSection title="Career Highlights">
-                <BulletList items={highlights} />
-              </ResumeSection>
-            ) : null}
+                  {highlights.length ? (
+                    <ResumeSection title="Career Highlights">
+                      <BulletList items={highlights} />
+                    </ResumeSection>
+                  ) : null}
 
-            {expertise.length ? (
-              <ResumeSection title="Core Expertise">
-                <div className="expertise-grid">
-                  {expertise.slice(0, 8).map((skill) => (
-                    <span key={skill}>{skill}</span>
-                  ))}
-                </div>
-              </ResumeSection>
-            ) : null}
+                  {expertise.length ? (
+                    <ResumeSection title="Core Expertise">
+                      <div className="expertise-grid">
+                        {expertise.slice(0, 8).map((skill) => (
+                          <span key={skill}>{skill}</span>
+                        ))}
+                      </div>
+                    </ResumeSection>
+                  ) : null}
+                  <ResumeFooter page="1" />
+                </article>
 
-            {experience.length ? (
-              <ResumeSection title="Professional Experience">
-                <BulletList items={experience} />
-              </ResumeSection>
-            ) : null}
-            <ResumeFooter page="1" />
-          </article>
+                {experiencePages.map((items, index) => (
+                  <article className="resume-page" aria-label={`Resume preview page ${index + 2}`} key={`experience-${index}`}>
+                    <ResumeHeader compact />
+                    <ResumeSection title={index === 0 ? "Professional Experience" : "Professional Experience Continued"}>
+                      <BulletList items={items} />
+                    </ResumeSection>
+                    <ResumeFooter page={String(index + 2)} />
+                  </article>
+                ))}
 
-          <article className="resume-page" aria-label="Resume preview page 2">
-            <header className="resume-header second-page">
-              <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
-            </header>
-            {achievements.length ? (
-              <ResumeSection title="Achievements">
-                <BulletList items={achievements} />
-              </ResumeSection>
-            ) : null}
+                {hasFinalPage ? (
+                  <article className="resume-page" aria-label={`Resume preview page ${totalPages}`}>
+                    <ResumeHeader compact />
+                    {achievements.length ? (
+                      <ResumeSection title="Achievements">
+                        <BulletList items={achievements} />
+                      </ResumeSection>
+                    ) : null}
 
-            {education.length ? (
-              <ResumeSection title="Education / Certification / Qualifications">
-                <BulletList items={education} />
-              </ResumeSection>
-            ) : null}
+                    {education.length ? (
+                      <ResumeSection title="Education / Certification / Qualifications">
+                        <BulletList items={education} />
+                      </ResumeSection>
+                    ) : null}
 
-            {data.additionalSkills ? (
-              <ResumeSection title="Technology / Additional Skills / Language">
-                <p>{data.additionalSkills}</p>
-              </ResumeSection>
-            ) : null}
+                    {data.additionalSkills ? (
+                      <ResumeSection title="Technology / Additional Skills / Language">
+                        <p>{data.additionalSkills}</p>
+                      </ResumeSection>
+                    ) : null}
 
-            {data.alignment ? (
-              <ResumeSection title="Alignment with the role applying">
-                <p>{data.alignment}</p>
-              </ResumeSection>
-            ) : null}
-            <ResumeFooter page="2" />
-          </article>
+                    {data.alignment ? (
+                      <ResumeSection title="Alignment with the role applying">
+                        <p>{data.alignment}</p>
+                      </ResumeSection>
+                    ) : null}
+                    <ResumeFooter page={String(totalPages)} />
+                  </article>
+                ) : null}
               </div>
             </>
           )}
         </div>
       </div>
     </section>
+  );
+}
+
+function ResumeHeader({ compact = false }: { compact?: boolean }) {
+  return (
+    <header className={compact ? "resume-header second-page" : "resume-header"}>
+      <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
+    </header>
   );
 }
 

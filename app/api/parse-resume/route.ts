@@ -153,14 +153,17 @@ export async function POST(request: Request) {
           role: "user",
           parts: [
             {
-              text: `Extract this candidate information into the TBBT resume fields.
+              text: `Extract and lightly format this candidate information into the TBBT resume fields.
 
 Rules:
 - Use only details that appear in the candidate text.
-- Do not add, invent, embellish, infer, rewrite, or improve facts.
+- Do not add, invent, embellish, infer, or improve facts.
 - Put information under the best matching field.
-- Preserve wording as much as possible.
+- Lightly reformat for a professional resume: concise bullets, clean labels, consistent dates, and remove duplicated headings.
+- Preserve the original meaning and factual details.
 - If a field is missing, return an empty string.
+- For Professional Experience, use newline-separated entries and bullets, grouped by company/project/role where possible.
+- Do not paste the full raw text as one block.
 - Return JSON only.
 
 Candidate text:
