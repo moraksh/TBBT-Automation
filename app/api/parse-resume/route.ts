@@ -159,10 +159,17 @@ Rules:
 - Use only details that appear in the candidate text.
 - Do not add, invent, embellish, infer, or improve facts.
 - Put information under the best matching field.
-- Lightly reformat for a professional resume: concise bullets, clean labels, consistent dates, and remove duplicated headings.
+- Lightly reformat for a professional resume: concise bullets, clean labels, consistent dates, corrected spacing/capitalization, and remove duplicated headings.
 - Preserve the original meaning and factual details.
 - If a field is missing, return an empty string.
-- For Professional Experience, use newline-separated entries and bullets, grouped by company/project/role where possible.
+- Do not return paragraphs copied as-is from the pasted data.
+- Convert responsibilities and achievements into short action-oriented bullets without changing the facts.
+- For Professional Experience, format as:
+  Company / Client | Dates
+  Role / Project | Location or technology if provided
+  - Responsibility or delivery point
+  - Responsibility or delivery point
+- Keep each bullet under 22 words where possible.
 - Do not paste the full raw text as one block.
 - Return JSON only.
 

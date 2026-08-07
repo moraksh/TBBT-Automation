@@ -697,9 +697,9 @@ a {
   bottom: 64px;
   height: 22px;
   display: grid;
-  grid-template-columns: 1fr 54px;
+  grid-template-columns: 1fr 36px;
   align-items: center;
-  background: linear-gradient(90deg, #87bdd0 0 16px, #bd82b7 16px calc(100% - 54px), #87bdd0 calc(100% - 54px));
+  background: linear-gradient(90deg, #87bdd0 0 16px, #bd82b7 16px calc(100% - 36px), #87bdd0 calc(100% - 36px));
   color: #ffffff;
   font-size: 8px;
 }
@@ -711,6 +711,32 @@ a {
 .resume-footer strong {
   text-align: center;
   font-size: 10px;
+}
+
+.experience-list {
+  display: grid;
+  gap: 5px;
+}
+
+.experience-list p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.38;
+}
+
+.experience-meta {
+  font-weight: 700;
+}
+
+.experience-bullet {
+  position: relative;
+  padding-left: 18px;
+}
+
+.experience-bullet::before {
+  content: "•";
+  position: absolute;
+  left: 6px;
 }
 
 @media (max-width: 680px) {

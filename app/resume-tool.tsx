@@ -185,6 +185,13 @@ function toList(value: string, splitCommas = false) {
     .filter(Boolean);
 }
 
+function toLines(value: string) {
+  return value
+    .split(/\r?\n|;/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 function chunkItems<T>(items: T[], size: number) {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
@@ -231,7 +238,7 @@ export function ResumeTool() {
   const isBlind = layout === "blind";
   const expertise = useMemo(() => toList(data.expertise, true), [data.expertise]);
   const highlights = useMemo(() => toList(data.highlights), [data.highlights]);
-  const experience = useMemo(() => toList(data.experience), [data.experience]);
+  const experience = useMemo(() => toLines(data.experience), [data.experience]);
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
   const contactDetails = [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean);
@@ -432,16 +439,16 @@ export function ResumeTool() {
                       </div>
                     </ResumeSection>
                   ) : null}
-                  <ResumeFooter page="1" totalPages={String(totalPages)} />
+                  <ResumeFooter page="1" />
                 </article>
 
                 {experiencePages.map((items, index) => (
                   <article className="resume-page" aria-label={`Resume preview page ${index + 2}`} key={`experience-${index}`}>
                     <ResumeHeader compact />
                     <ResumeSection title={index === 0 ? "Professional Experience" : "Professional Experience Continued"}>
-                      <BulletList items={items} />
+                      <ExperienceList items={items} />
                     </ResumeSection>
-                    <ResumeFooter page={String(index + 2)} totalPages={String(totalPages)} />
+                    <ResumeFooter page={String(index + 2)} />
                   </article>
                 ))}
 
@@ -471,7 +478,7 @@ export function ResumeTool() {
                         <p>{data.alignment}</p>
                       </ResumeSection>
                     ) : null}
-                    <ResumeFooter page={String(totalPages)} totalPages={String(totalPages)} />
+                    <ResumeFooter page={String(totalPages)} />
                   </article>
                 ) : null}
               </div>
@@ -491,11 +498,11 @@ function ResumeHeader({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function ResumeFooter({ page, totalPages }: { page: string; totalPages: string }) {
+function ResumeFooter({ page }: { page: string }) {
   return (
     <footer className="resume-footer">
       <span>The Blackbox Talent FZCO, Dubai, United Arab Emirates. M: +971 55 773 6808 E: info@theblackboxtalent.com</span>
-      <strong>{page} / {totalPages}</strong>
+      <strong>{page}</strong>
     </footer>
   );
 }
@@ -516,5 +523,22 @@ function BulletList({ items }: { items: string[] }) {
         <li key={item}>{item}</li>
       ))}
     </ul>
+  );
+}
+
+function ExperienceList({ items }: { items: string[] }) {
+  return (
+    <div className="experience-list">
+      {items.map((item) => {
+        const isBullet = /^[-*•]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed)\b/i.test(item);
+        const text = item.replace(/^[-*•\s]+/, "").trim();
+
+        return isBullet ? (
+          <p className="experience-bullet" key={item}>{text}</p>
+        ) : (
+          <p className="experience-meta" key={item}>{text}</p>
+        );
+      })}
+    </div>
   );
 }
