@@ -432,7 +432,7 @@ export function ResumeTool() {
                       </div>
                     </ResumeSection>
                   ) : null}
-                  <ResumeFooter page="1" />
+                  <ResumeFooter page="1" totalPages={String(totalPages)} />
                 </article>
 
                 {experiencePages.map((items, index) => (
@@ -441,7 +441,7 @@ export function ResumeTool() {
                     <ResumeSection title={index === 0 ? "Professional Experience" : "Professional Experience Continued"}>
                       <BulletList items={items} />
                     </ResumeSection>
-                    <ResumeFooter page={String(index + 2)} />
+                    <ResumeFooter page={String(index + 2)} totalPages={String(totalPages)} />
                   </article>
                 ))}
 
@@ -471,7 +471,7 @@ export function ResumeTool() {
                         <p>{data.alignment}</p>
                       </ResumeSection>
                     ) : null}
-                    <ResumeFooter page={String(totalPages)} />
+                    <ResumeFooter page={String(totalPages)} totalPages={String(totalPages)} />
                   </article>
                 ) : null}
               </div>
@@ -491,11 +491,11 @@ function ResumeHeader({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function ResumeFooter({ page }: { page: string }) {
+function ResumeFooter({ page, totalPages }: { page: string; totalPages: string }) {
   return (
     <footer className="resume-footer">
       <span>The Blackbox Talent FZCO, Dubai, United Arab Emirates. M: +971 55 773 6808 E: info@theblackboxtalent.com</span>
-      <strong>{page}</strong>
+      <strong>{page} / {totalPages}</strong>
     </footer>
   );
 }
