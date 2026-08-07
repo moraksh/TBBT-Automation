@@ -556,6 +556,10 @@ a {
   pointer-events: none;
 }
 
+.measure-page [data-measure-unit] {
+  display: flow-root;
+}
+
 .resume-page {
   width: 794px;
   min-width: 794px;
@@ -572,7 +576,7 @@ a {
 }
 
 .resume-page-body {
-  max-height: 950px;
+  max-height: 900px;
   overflow: hidden;
 }
 
@@ -586,7 +590,7 @@ a {
 }
 
 .resume-header.second-page {
-  margin-bottom: 34px;
+  margin-bottom: 20px;
 }
 
 .resume-logo {

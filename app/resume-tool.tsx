@@ -274,14 +274,14 @@ export function ResumeTool() {
     }
 
     const measuredNodes = Array.from(measureRef.current.querySelectorAll<HTMLElement>("[data-measure-unit]"));
-    const firstPageLimit = 920;
-    const laterPageLimit = 950;
+    const firstPageLimit = 885;
+    const laterPageLimit = 885;
     const nextPages: ResumeUnit[][] = [];
     let currentPage: ResumeUnit[] = [];
     let currentHeight = 0;
 
     resumeUnits.forEach((unit, index) => {
-      const measuredHeight = measuredNodes[index]?.offsetHeight || 0;
+      const measuredHeight = Math.ceil(measuredNodes[index]?.getBoundingClientRect().height || 0) + 4;
       const limit = nextPages.length === 0 ? firstPageLimit : laterPageLimit;
       const shouldStartNewPage = currentPage.length > 0 && currentHeight + measuredHeight > limit;
 
@@ -534,7 +534,7 @@ function buildResumeUnits({
   highlights.forEach((item, index) =>
     units.push({ id: `highlight-${index}`, kind: "listItem", sectionTitle: "Career Highlights", title: index === 0 ? "Career Highlights" : undefined, text: item }),
   );
-  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise });
+  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise.slice(0, 12) });
   experience.forEach((item, index) =>
     units.push({
       id: `experience-${index}`,
