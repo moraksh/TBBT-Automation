@@ -280,8 +280,8 @@ export function ResumeTool() {
   return (
     <section className="resume-tool" id="tools" aria-label="Resume formatter tool">
       <div className="tool-heading">
-        <p className="eyebrow compact">Tool 01 <span /> Resume Formatter</p>
-        <h2>Paste candidate information. Review the canvas. Export one clean TBBT PDF.</h2>
+        <h1>Resume Formatter</h1>
+        <p>Paste candidate information, populate the template, proofread, then export a client-ready PDF.</p>
       </div>
 
       <div className="tool-workspace">
@@ -354,10 +354,10 @@ export function ResumeTool() {
             </button>
           </div>
 
-          <article className="resume-page" aria-label="Resume preview">
+          <div className="resume-document" aria-label="Resume preview">
+          <article className="resume-page" aria-label="Resume preview page 1">
             <header className="resume-header">
-              <img src="/tbbt-logo.png" alt="The BlackBox Talent" />
-              {!isBlind && photo ? <img className="candidate-photo" src={photo} alt="Candidate" /> : null}
+              <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
             </header>
 
             <section className="candidate-intro">
@@ -366,13 +366,18 @@ export function ResumeTool() {
                 <p>{data.title || "Current Title or Position Applying | Certificate | Geography Covered"}</p>
                 {!isBlind ? (
                   <p className="contact-line">
-                    {[data.location, data.phone, data.email, data.linkedin].filter(Boolean).join(" | ") ||
+                    {[data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean).join(" | ") ||
                       "Location | M: (+971) _____________ | Email: _______________ | LinkedIn"}
                   </p>
                 ) : (
                   <p className="contact-line">Identity hidden for client review</p>
                 )}
               </div>
+              {!isBlind ? (
+                <div className="photo-frame">
+                  {photo ? <img className="candidate-photo" src={photo} alt="Candidate" /> : <span>Picture optional</span>}
+                </div>
+              ) : null}
             </section>
 
             <ResumeSection title="Executive Summary OR Summary">
@@ -394,7 +399,13 @@ export function ResumeTool() {
             <ResumeSection title="Professional Experience">
               <BulletList items={experience} fallback="Company Name (Duration Dates)\nCurrent Title - Location\nBullets to be added" />
             </ResumeSection>
+            <ResumeFooter page="1" />
+          </article>
 
+          <article className="resume-page" aria-label="Resume preview page 2">
+            <header className="resume-header second-page">
+              <img className="resume-logo" src="/tbbt-logo.png" alt="The BlackBox Talent" />
+            </header>
             <ResumeSection title="Achievements">
               <BulletList items={achievements} fallback="Bullets to be added" />
             </ResumeSection>
@@ -410,10 +421,21 @@ export function ResumeTool() {
             <ResumeSection title="Alignment with the role applying">
               <p>{data.alignment || "Text to be added"}</p>
             </ResumeSection>
+            <ResumeFooter page="2" />
           </article>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function ResumeFooter({ page }: { page: string }) {
+  return (
+    <footer className="resume-footer">
+      <span>The Blackbox Talent FZCO, Dubai, United Arab Emirates. M: +971 55 773 6808 E: info@theblackboxtalent.com</span>
+      <strong>{page}</strong>
+    </footer>
   );
 }
 

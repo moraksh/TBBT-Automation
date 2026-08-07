@@ -1,8 +1,8 @@
-import { ResumeTool } from "./resume-tool";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-[#050506]">
+    <main className="app-shell">
       <section className="hero-shell">
         <nav className="topbar" aria-label="Primary">
           <a className="brand" href="https://theblackboxtalent.com/">
@@ -12,21 +12,14 @@ export default function Home() {
               <small>Automation Command Center</small>
             </span>
           </a>
-          <a className="nav-cta" href="#tools">Open Workspace</a>
         </nav>
-
-        <div className="hero-copy">
-          <p className="eyebrow">Premium <span /> Internal automation hub</p>
-          <h1>TBBT tools, built inside the BlackBox experience.</h1>
-          <p className="hero-lede">
-            A branded workspace for day-to-day recruitment automation, ready to
-            host each tool as we add it: intake, shortlisting, screening,
-            reporting, and client delivery.
-          </p>
-        </div>
       </section>
 
-      <ResumeTool />
+      <section className="tools-grid" aria-label="Automation tools">
+        <Link className="tool-card" href="/tools/resume-formatter">
+          <span>Resume Formatter</span>
+        </Link>
+      </section>
     </main>
   );
 }
