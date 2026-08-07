@@ -549,7 +549,7 @@ a {
   height: 1123px;
   position: relative;
   margin: 0 auto;
-  padding: 56px 90px 74px;
+  padding: 46px 76px 62px;
   border: 1px solid #b9b9b9;
   background: #ffffff;
   color: #000000;
@@ -559,7 +559,7 @@ a {
 }
 
 .resume-header {
-  min-height: 44px;
+  min-height: 36px;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
@@ -568,11 +568,11 @@ a {
 }
 
 .resume-header.second-page {
-  margin-bottom: 58px;
+  margin-bottom: 34px;
 }
 
 .resume-logo {
-  width: 176px;
+  width: 164px;
   height: auto;
 }
 
@@ -609,7 +609,7 @@ a {
   display: flex;
   justify-content: space-between;
   gap: 28px;
-  padding: 28px 0 10px;
+  padding: 22px 0 8px;
 }
 
 .candidate-intro h3 {
@@ -635,11 +635,11 @@ a {
 }
 
 .resume-section {
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .resume-section h4 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   padding: 0;
   background: transparent;
   color: #6d1265;
@@ -654,7 +654,7 @@ a {
 .resume-section li,
 .expertise-grid span {
   font-size: 9px;
-  line-height: 1.38;
+  line-height: 1.3;
 }
 
 .resume-section p {
@@ -668,7 +668,7 @@ a {
 }
 
 .resume-section li + li {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .expertise-grid {
@@ -694,7 +694,7 @@ a {
   position: absolute;
   left: 20px;
   right: 50px;
-  bottom: 64px;
+  bottom: 42px;
   height: 22px;
   display: grid;
   grid-template-columns: 1fr 36px;
@@ -715,13 +715,13 @@ a {
 
 .experience-list {
   display: grid;
-  gap: 5px;
+  gap: 3px;
 }
 
 .experience-list p {
   margin: 0;
   font-size: 9px;
-  line-height: 1.38;
+  line-height: 1.3;
 }
 
 .experience-meta {
@@ -805,7 +805,7 @@ a {
     width: 794px;
     min-width: 794px;
     height: 1123px;
-    padding: 56px 90px 74px;
+    padding: 46px 76px 62px;
   }
 
   .resume-header {

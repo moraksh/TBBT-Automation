@@ -242,7 +242,8 @@ export function ResumeTool() {
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
   const contactDetails = [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean);
-  const experiencePages = useMemo(() => chunkItems(experience, 14), [experience]);
+  const firstPageExperience = useMemo(() => experience.slice(0, 18), [experience]);
+  const experiencePages = useMemo(() => chunkItems(experience.slice(18), 32), [experience]);
   const hasFinalPage = Boolean(achievements.length || education.length || data.additionalSkills || data.alignment);
   const totalPages = 1 + experiencePages.length + (hasFinalPage ? 1 : 0);
 
@@ -439,13 +440,18 @@ export function ResumeTool() {
                       </div>
                     </ResumeSection>
                   ) : null}
+                  {firstPageExperience.length ? (
+                    <ResumeSection title="Professional Experience">
+                      <ExperienceList items={firstPageExperience} />
+                    </ResumeSection>
+                  ) : null}
                   <ResumeFooter page="1" />
                 </article>
 
                 {experiencePages.map((items, index) => (
                   <article className="resume-page" aria-label={`Resume preview page ${index + 2}`} key={`experience-${index}`}>
                     <ResumeHeader compact />
-                    <ResumeSection title={index === 0 ? "Professional Experience" : "Professional Experience Continued"}>
+                    <ResumeSection title="Professional Experience Continued">
                       <ExperienceList items={items} />
                     </ResumeSection>
                     <ResumeFooter page={String(index + 2)} />
