@@ -164,6 +164,8 @@ Rules:
 - If a field is missing, return an empty string.
 - Do not return paragraphs copied as-is from the pasted data.
 - Convert responsibilities and achievements into short action-oriented bullets without changing the facts.
+- Remove labels from skill names, for example convert "Languages: RPG/400" to "RPG/400".
+- Core Expertise should contain only skills, tools, domains, technologies, or capabilities separated by commas or new lines.
 - For Professional Experience, format as:
   Company / Client | Dates
   Role / Project | Location or technology if provided

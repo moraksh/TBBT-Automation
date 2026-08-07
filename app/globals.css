@@ -651,7 +651,8 @@ a {
 
 .resume-section ul {
   margin: 0;
-  padding-left: 48px;
+  padding-left: 18px;
+  list-style-position: outside;
 }
 
 .resume-section li + li {
@@ -660,7 +661,7 @@ a {
 
 .expertise-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   border: 1px solid #a7a7a7;
 }
 
@@ -674,7 +675,7 @@ a {
 }
 
 .expertise-grid span:nth-child(4n) {
-  border-right: 0;
+  border-right: 1px solid #a7a7a7;
 }
 
 .resume-footer {
@@ -717,13 +718,13 @@ a {
 
 .experience-bullet {
   position: relative;
-  padding-left: 18px;
+  padding-left: 12px;
 }
 
 .experience-bullet::before {
   content: "•";
   position: absolute;
-  left: 6px;
+  left: 0;
 }
 
 @media (max-width: 680px) {

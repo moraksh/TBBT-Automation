@@ -200,6 +200,15 @@ function chunkItems<T>(items: T[], size: number) {
   return chunks;
 }
 
+function getFinalSectionWeight(data: ResumeData, achievements: string[], education: string[]) {
+  let weight = 0;
+  if (achievements.length) weight += 3 + achievements.length;
+  if (education.length) weight += 3 + education.length;
+  if (data.additionalSkills) weight += 4 + Math.ceil(data.additionalSkills.length / 110);
+  if (data.alignment) weight += 4 + Math.ceil(data.alignment.length / 110);
+  return weight;
+}
+
 function TextField({
   label,
   field,
@@ -244,7 +253,11 @@ export function ResumeTool() {
   const contactDetails = [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean);
   const firstPageExperience = useMemo(() => experience.slice(0, 18), [experience]);
   const experiencePages = useMemo(() => chunkItems(experience.slice(18), 32), [experience]);
-  const hasFinalPage = Boolean(achievements.length || education.length || data.additionalSkills || data.alignment);
+  const hasFinalSections = Boolean(achievements.length || education.length || data.additionalSkills || data.alignment);
+  const finalSectionWeight = getFinalSectionWeight(data, achievements, education);
+  const showFinalOnFirstPage = hasFinalSections && experience.length <= 12 && finalSectionWeight <= 22;
+  const showFinalOnLastExperiencePage = hasFinalSections && !showFinalOnFirstPage && experiencePages.length > 0 && experiencePages[experiencePages.length - 1].length + finalSectionWeight <= 30;
+  const hasFinalPage = hasFinalSections && !showFinalOnFirstPage && !showFinalOnLastExperiencePage;
   const totalPages = 1 + experiencePages.length + (hasFinalPage ? 1 : 0);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -445,6 +458,14 @@ export function ResumeTool() {
                       <ExperienceList items={firstPageExperience} />
                     </ResumeSection>
                   ) : null}
+                  {showFinalOnFirstPage ? (
+                    <FinalSections
+                      achievements={achievements}
+                      education={education}
+                      additionalSkills={data.additionalSkills}
+                      alignment={data.alignment}
+                    />
+                  ) : null}
                   <ResumeFooter page="1" />
                 </article>
 
@@ -454,6 +475,14 @@ export function ResumeTool() {
                     <ResumeSection title="Professional Experience Continued">
                       <ExperienceList items={items} />
                     </ResumeSection>
+                    {showFinalOnLastExperiencePage && index === experiencePages.length - 1 ? (
+                      <FinalSections
+                        achievements={achievements}
+                        education={education}
+                        additionalSkills={data.additionalSkills}
+                        alignment={data.alignment}
+                      />
+                    ) : null}
                     <ResumeFooter page={String(index + 2)} />
                   </article>
                 ))}
@@ -461,29 +490,12 @@ export function ResumeTool() {
                 {hasFinalPage ? (
                   <article className="resume-page" aria-label={`Resume preview page ${totalPages}`}>
                     <ResumeHeader compact />
-                    {achievements.length ? (
-                      <ResumeSection title="Achievements">
-                        <BulletList items={achievements} />
-                      </ResumeSection>
-                    ) : null}
-
-                    {education.length ? (
-                      <ResumeSection title="Education / Certification / Qualifications">
-                        <BulletList items={education} />
-                      </ResumeSection>
-                    ) : null}
-
-                    {data.additionalSkills ? (
-                      <ResumeSection title="Technology / Additional Skills / Language">
-                        <p>{data.additionalSkills}</p>
-                      </ResumeSection>
-                    ) : null}
-
-                    {data.alignment ? (
-                      <ResumeSection title="Alignment with the role applying">
-                        <p>{data.alignment}</p>
-                      </ResumeSection>
-                    ) : null}
+                    <FinalSections
+                      achievements={achievements}
+                      education={education}
+                      additionalSkills={data.additionalSkills}
+                      alignment={data.alignment}
+                    />
                     <ResumeFooter page={String(totalPages)} />
                   </article>
                 ) : null}
@@ -519,6 +531,46 @@ function ResumeSection({ title, children }: { title: string; children: ReactNode
       <h4>{title}</h4>
       {children}
     </section>
+  );
+}
+
+function FinalSections({
+  achievements,
+  education,
+  additionalSkills,
+  alignment,
+}: {
+  achievements: string[];
+  education: string[];
+  additionalSkills: string;
+  alignment: string;
+}) {
+  return (
+    <>
+      {achievements.length ? (
+        <ResumeSection title="Achievements">
+          <BulletList items={achievements} />
+        </ResumeSection>
+      ) : null}
+
+      {education.length ? (
+        <ResumeSection title="Education / Certification / Qualifications">
+          <BulletList items={education} />
+        </ResumeSection>
+      ) : null}
+
+      {additionalSkills ? (
+        <ResumeSection title="Technology / Additional Skills / Language">
+          <p>{additionalSkills}</p>
+        </ResumeSection>
+      ) : null}
+
+      {alignment ? (
+        <ResumeSection title="Alignment with the role applying">
+          <p>{alignment}</p>
+        </ResumeSection>
+      ) : null}
+    </>
   );
 }
 
