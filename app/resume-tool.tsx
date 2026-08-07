@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useMemo, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type ResumeData = {
   candidateName: string;
@@ -17,6 +17,15 @@ type ResumeData = {
   education: string;
   additionalSkills: string;
   alignment: string;
+};
+
+type ResumeUnit = {
+  id: string;
+  title?: string;
+  sectionTitle?: string;
+  kind: "intro" | "paragraph" | "listItem" | "expertise" | "experienceItem";
+  text?: string;
+  items?: string[];
 };
 
 const emptyResume: ResumeData = {
@@ -192,23 +201,6 @@ function toLines(value: string) {
     .filter(Boolean);
 }
 
-function chunkItems<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
-
-function getFinalSectionWeight(data: ResumeData, achievements: string[], education: string[]) {
-  let weight = 0;
-  if (achievements.length) weight += 3 + achievements.length;
-  if (education.length) weight += 3 + education.length;
-  if (data.additionalSkills) weight += 4 + Math.ceil(data.additionalSkills.length / 110);
-  if (data.alignment) weight += 4 + Math.ceil(data.alignment.length / 110);
-  return weight;
-}
-
 function TextField({
   label,
   field,
@@ -250,15 +242,48 @@ export function ResumeTool() {
   const experience = useMemo(() => toLines(data.experience), [data.experience]);
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
-  const contactDetails = [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean);
-  const firstPageExperience = useMemo(() => experience.slice(0, 18), [experience]);
-  const experiencePages = useMemo(() => chunkItems(experience.slice(18), 32), [experience]);
-  const hasFinalSections = Boolean(achievements.length || education.length || data.additionalSkills || data.alignment);
-  const finalSectionWeight = getFinalSectionWeight(data, achievements, education);
-  const showFinalOnFirstPage = hasFinalSections && experience.length <= 12 && finalSectionWeight <= 22;
-  const showFinalOnLastExperiencePage = hasFinalSections && !showFinalOnFirstPage && experiencePages.length > 0 && experiencePages[experiencePages.length - 1].length + finalSectionWeight <= 30;
-  const hasFinalPage = hasFinalSections && !showFinalOnFirstPage && !showFinalOnLastExperiencePage;
-  const totalPages = 1 + experiencePages.length + (hasFinalPage ? 1 : 0);
+  const contactDetails = useMemo(
+    () => [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean),
+    [data.email, data.linkedin, data.location, data.phone],
+  );
+  const resumeUnits = useMemo(
+    () => buildResumeUnits({ data, isBlind, contactDetails, photo, expertise, highlights, experience, achievements, education }),
+    [achievements, contactDetails, data, education, experience, expertise, highlights, isBlind, photo],
+  );
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [pages, setPages] = useState<ResumeUnit[][]>([]);
+
+  useLayoutEffect(() => {
+    if (!hasCanvas || !measureRef.current) {
+      setPages([]);
+      return;
+    }
+
+    const measuredNodes = Array.from(measureRef.current.querySelectorAll<HTMLElement>("[data-measure-unit]"));
+    const firstPageLimit = 920;
+    const laterPageLimit = 950;
+    const nextPages: ResumeUnit[][] = [];
+    let currentPage: ResumeUnit[] = [];
+    let currentHeight = 0;
+
+    resumeUnits.forEach((unit, index) => {
+      const measuredHeight = measuredNodes[index]?.offsetHeight || 0;
+      const limit = nextPages.length === 0 ? firstPageLimit : laterPageLimit;
+      const shouldStartNewPage = currentPage.length > 0 && currentHeight + measuredHeight > limit;
+
+      if (shouldStartNewPage) {
+        nextPages.push(currentPage);
+        currentPage = [];
+        currentHeight = 0;
+      }
+
+      currentPage.push(unit);
+      currentHeight += measuredHeight;
+    });
+
+    if (currentPage.length) nextPages.push(currentPage);
+    setPages(nextPages.length ? nextPages : [[]]);
+  }, [hasCanvas, resumeUnits]);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -412,93 +437,29 @@ export function ResumeTool() {
               </div>
 
               <div className="resume-document" aria-label="Resume preview">
-                <article className="resume-page" aria-label="Resume preview page 1">
-                  <ResumeHeader />
-
-                  <section className="candidate-intro">
-                    <div>
-                      {isBlind ? <h3>Confidential Candidate Profile</h3> : data.candidateName ? <h3>{data.candidateName}</h3> : null}
-                      {data.title ? <p>{data.title}</p> : null}
-                      {!isBlind ? (
-                        contactDetails.length ? <p className="contact-line">{contactDetails.join(" | ")}</p> : null
-                      ) : (
-                        <p className="contact-line">Identity hidden for client review</p>
-                      )}
+                <div className="measure-page" ref={measureRef} aria-hidden="true">
+                  {resumeUnits.map((unit) => (
+                    <div data-measure-unit key={unit.id}>
+                      <ResumeUnitContent unit={unit} />
                     </div>
-                    {!isBlind && photo ? (
-                      <div className="photo-frame">
-                        <img className="candidate-photo" src={photo} alt="Candidate" />
-                      </div>
-                    ) : null}
-                  </section>
+                  ))}
+                </div>
 
-                  {data.summary ? (
-                    <ResumeSection title="Executive Summary OR Summary">
-                      <p>{data.summary}</p>
-                    </ResumeSection>
-                  ) : null}
-
-                  {highlights.length ? (
-                    <ResumeSection title="Career Highlights">
-                      <BulletList items={highlights} />
-                    </ResumeSection>
-                  ) : null}
-
-                  {expertise.length ? (
-                    <ResumeSection title="Core Expertise">
-                      <div className="expertise-grid">
-                        {expertise.slice(0, 8).map((skill) => (
-                          <span key={skill}>{skill}</span>
-                        ))}
-                      </div>
-                    </ResumeSection>
-                  ) : null}
-                  {firstPageExperience.length ? (
-                    <ResumeSection title="Professional Experience">
-                      <ExperienceList items={firstPageExperience} />
-                    </ResumeSection>
-                  ) : null}
-                  {showFinalOnFirstPage ? (
-                    <FinalSections
-                      achievements={achievements}
-                      education={education}
-                      additionalSkills={data.additionalSkills}
-                      alignment={data.alignment}
-                    />
-                  ) : null}
-                  <ResumeFooter page="1" />
-                </article>
-
-                {experiencePages.map((items, index) => (
-                  <article className="resume-page" aria-label={`Resume preview page ${index + 2}`} key={`experience-${index}`}>
-                    <ResumeHeader compact />
-                    <ResumeSection title="Professional Experience Continued">
-                      <ExperienceList items={items} />
-                    </ResumeSection>
-                    {showFinalOnLastExperiencePage && index === experiencePages.length - 1 ? (
-                      <FinalSections
-                        achievements={achievements}
-                        education={education}
-                        additionalSkills={data.additionalSkills}
-                        alignment={data.alignment}
-                      />
-                    ) : null}
-                    <ResumeFooter page={String(index + 2)} />
+                {(pages.length ? pages : [resumeUnits]).map((pageUnits, index) => (
+                  <article className="resume-page" aria-label={`Resume preview page ${index + 1}`} key={`page-${index}`}>
+                    <ResumeHeader compact={index > 0} />
+                    <div className="resume-page-body">
+                      {pageUnits.map((unit) => (
+                        <ResumeUnitContent
+                          forceTitle={!unit.title && unit.sectionTitle && pageUnits[0].id === unit.id ? `${unit.sectionTitle} Continued` : undefined}
+                          unit={unit}
+                          key={unit.id}
+                        />
+                      ))}
+                    </div>
+                    <ResumeFooter page={String(index + 1)} />
                   </article>
                 ))}
-
-                {hasFinalPage ? (
-                  <article className="resume-page" aria-label={`Resume preview page ${totalPages}`}>
-                    <ResumeHeader compact />
-                    <FinalSections
-                      achievements={achievements}
-                      education={education}
-                      additionalSkills={data.additionalSkills}
-                      alignment={data.alignment}
-                    />
-                    <ResumeFooter page={String(totalPages)} />
-                  </article>
-                ) : null}
               </div>
             </>
           )}
@@ -506,6 +467,71 @@ export function ResumeTool() {
       </div>
     </section>
   );
+}
+
+function buildResumeUnits({
+  data,
+  isBlind,
+  contactDetails,
+  photo,
+  expertise,
+  highlights,
+  experience,
+  achievements,
+  education,
+}: {
+  data: ResumeData;
+  isBlind: boolean;
+  contactDetails: string[];
+  photo: string;
+  expertise: string[];
+  highlights: string[];
+  experience: string[];
+  achievements: string[];
+  education: string[];
+}) {
+  const units: ResumeUnit[] = [];
+  units.push({
+    id: "intro",
+    kind: "intro",
+    text: JSON.stringify({
+      name: isBlind ? "Confidential Candidate Profile" : data.candidateName,
+      title: data.title,
+      contact: isBlind ? "Identity hidden for client review" : contactDetails.join(" | "),
+      photo: !isBlind ? photo : "",
+    }),
+  });
+
+  if (data.summary) units.push({ id: "summary", kind: "paragraph", title: "Executive Summary OR Summary", text: data.summary });
+  highlights.forEach((item, index) =>
+    units.push({ id: `highlight-${index}`, kind: "listItem", sectionTitle: "Career Highlights", title: index === 0 ? "Career Highlights" : undefined, text: item }),
+  );
+  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise });
+  experience.forEach((item, index) =>
+    units.push({
+      id: `experience-${index}`,
+      kind: "experienceItem",
+      sectionTitle: "Professional Experience",
+      title: index === 0 ? "Professional Experience" : undefined,
+      text: item,
+    }),
+  );
+  achievements.forEach((item, index) =>
+    units.push({ id: `achievement-${index}`, kind: "listItem", sectionTitle: "Achievements", title: index === 0 ? "Achievements" : undefined, text: item }),
+  );
+  education.forEach((item, index) =>
+    units.push({
+      id: `education-${index}`,
+      kind: "listItem",
+      sectionTitle: "Education / Certification / Qualifications",
+      title: index === 0 ? "Education / Certification / Qualifications" : undefined,
+      text: item,
+    }),
+  );
+  if (data.additionalSkills) units.push({ id: "additional-skills", kind: "paragraph", title: "Technology / Additional Skills / Language", text: data.additionalSkills });
+  if (data.alignment) units.push({ id: "alignment", kind: "paragraph", title: "Alignment with the role applying", text: data.alignment });
+
+  return units;
 }
 
 function ResumeHeader({ compact = false }: { compact?: boolean }) {
@@ -525,52 +551,66 @@ function ResumeFooter({ page }: { page: string }) {
   );
 }
 
-function ResumeSection({ title, children }: { title: string; children: ReactNode }) {
+function ResumeUnitContent({ unit, forceTitle }: { unit: ResumeUnit; forceTitle?: string }) {
+  if (unit.kind === "intro") {
+    const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
+    return (
+      <section className="candidate-intro">
+        <div>
+          {intro.name ? <h3>{intro.name}</h3> : null}
+          {intro.title ? <p>{intro.title}</p> : null}
+          {intro.contact ? <p className="contact-line">{intro.contact}</p> : null}
+        </div>
+        {intro.photo ? (
+          <div className="photo-frame">
+            <img className="candidate-photo" src={intro.photo} alt="Candidate" />
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
+  if (unit.kind === "expertise") {
+    return (
+      <ResumeSection title={unit.title || "Core Expertise"}>
+        <div className="expertise-grid">
+          {(unit.items || []).map((skill) => (
+            <span key={skill}>{skill}</span>
+          ))}
+        </div>
+      </ResumeSection>
+    );
+  }
+
+  if (unit.kind === "experienceItem") {
+    return (
+      <ResumeSection title={forceTitle || unit.title}>
+        <ExperienceList items={unit.text ? [unit.text] : []} />
+      </ResumeSection>
+    );
+  }
+
+  if (unit.kind === "listItem") {
+    return (
+      <ResumeSection title={forceTitle || unit.title}>
+        <BulletList items={unit.text ? [unit.text] : []} />
+      </ResumeSection>
+    );
+  }
+
   return (
-    <section className="resume-section">
-      <h4>{title}</h4>
-      {children}
-    </section>
+    <ResumeSection title={forceTitle || unit.title}>
+      <p>{unit.text}</p>
+    </ResumeSection>
   );
 }
 
-function FinalSections({
-  achievements,
-  education,
-  additionalSkills,
-  alignment,
-}: {
-  achievements: string[];
-  education: string[];
-  additionalSkills: string;
-  alignment: string;
-}) {
+function ResumeSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <>
-      {achievements.length ? (
-        <ResumeSection title="Achievements">
-          <BulletList items={achievements} />
-        </ResumeSection>
-      ) : null}
-
-      {education.length ? (
-        <ResumeSection title="Education / Certification / Qualifications">
-          <BulletList items={education} />
-        </ResumeSection>
-      ) : null}
-
-      {additionalSkills ? (
-        <ResumeSection title="Technology / Additional Skills / Language">
-          <p>{additionalSkills}</p>
-        </ResumeSection>
-      ) : null}
-
-      {alignment ? (
-        <ResumeSection title="Alignment with the role applying">
-          <p>{alignment}</p>
-        </ResumeSection>
-      ) : null}
-    </>
+    <section className="resume-section">
+      {title ? <h4>{title}</h4> : null}
+      {children}
+    </section>
   );
 }
 

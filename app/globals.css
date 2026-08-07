@@ -543,6 +543,15 @@ a {
   align-items: start;
 }
 
+.measure-page {
+  width: 642px;
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .resume-page {
   width: 794px;
   min-width: 794px;
@@ -555,6 +564,11 @@ a {
   color: #000000;
   box-shadow: 0 12px 34px rgba(28, 16, 44, 0.12);
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+}
+
+.resume-page-body {
+  max-height: 950px;
   overflow: hidden;
 }
 
@@ -622,6 +636,11 @@ a {
 }
 
 .resume-section {
+  margin-top: 3px;
+}
+
+.candidate-intro + .resume-section,
+.resume-section:has(h4) {
   margin-top: 18px;
 }
 
@@ -703,7 +722,7 @@ a {
 
 .experience-list {
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .experience-list p {
