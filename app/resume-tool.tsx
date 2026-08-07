@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type ResumeData = {
   candidateName: string;
@@ -234,6 +234,8 @@ export function ResumeTool() {
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [aiError, setAiError] = useState("");
   const [hasCanvas, setHasCanvas] = useState(false);
+  const [isMobileProofingOpen, setIsMobileProofingOpen] = useState(false);
+  const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isBlind = layout === "blind";
@@ -252,6 +254,18 @@ export function ResumeTool() {
   );
   const measureRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<ResumeUnit[][]>([]);
+
+  useEffect(() => {
+    function updateMobileScale() {
+      if (typeof window === "undefined") return;
+      const nextScale = window.innerWidth <= 720 ? Math.min(1, Math.max(0.34, (window.innerWidth - 32) / 794)) : 1;
+      setMobilePreviewScale(nextScale);
+    }
+
+    updateMobileScale();
+    window.addEventListener("resize", updateMobileScale);
+    return () => window.removeEventListener("resize", updateMobileScale);
+  }, []);
 
   useLayoutEffect(() => {
     if (!hasCanvas || !measureRef.current) {
@@ -399,6 +413,16 @@ export function ResumeTool() {
             Add candidate photo
           </button>
 
+          {hasCanvas ? (
+            <button
+              type="button"
+              className="primary-button full-width mobile-proofing-button"
+              onClick={() => setIsMobileProofingOpen((isOpen) => !isOpen)}
+            >
+              {isMobileProofingOpen ? "Hide proofing" : "Show proofing"}
+            </button>
+          ) : null}
+
           <div className="field-grid">
             <TextField label="Candidate Name" field="candidateName" data={data} setData={setData} />
             <TextField label="Current Title / Position" field="title" data={data} setData={setData} />
@@ -418,7 +442,7 @@ export function ResumeTool() {
           <TextField label="Alignment with the role applying" field="alignment" data={data} setData={setData} rows={3} />
         </div>
 
-        <div className="preview-panel">
+        <div className={`preview-panel ${isMobileProofingOpen ? "mobile-proofing-open" : ""}`}>
           {!hasCanvas ? (
             <div className="canvas-empty">
               <strong>Paste the candidate information</strong>
@@ -436,7 +460,11 @@ export function ResumeTool() {
                 </button>
               </div>
 
-              <div className="resume-document" aria-label="Resume preview">
+              <div
+                className="resume-document"
+                aria-label="Resume preview"
+                style={{ zoom: mobilePreviewScale } as CSSProperties}
+              >
                 <div className="measure-page" ref={measureRef} aria-hidden="true">
                   {resumeUnits.map((unit) => (
                     <div data-measure-unit key={unit.id}>

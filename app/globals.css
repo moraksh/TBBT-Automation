@@ -473,6 +473,10 @@ a {
   margin-bottom: 16px;
 }
 
+.mobile-proofing-button {
+  display: none;
+}
+
 .hidden-file {
   display: none;
 }
@@ -804,8 +808,31 @@ a {
     min-height: 92px;
   }
 
+  .mobile-proofing-button {
+    display: inline-flex;
+  }
+
   .field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .preview-panel {
+    display: none;
+  }
+
+  .preview-panel.mobile-proofing-open {
+    display: block;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .preview-panel.mobile-proofing-open .preview-toolbar {
+    display: flex;
+  }
+
+  .preview-panel.mobile-proofing-open .resume-document {
+    width: fit-content;
+    overflow: visible;
   }
 
   .resume-page {
@@ -852,6 +879,7 @@ a {
 
   .resume-tool,
   .preview-panel {
+    display: block !important;
     padding: 0;
     border: 0;
     box-shadow: none;
@@ -864,6 +892,7 @@ a {
 
   .resume-document {
     display: block;
+    zoom: 1 !important;
   }
 
   .resume-page {
