@@ -586,6 +586,11 @@ a {
   overflow: hidden;
 }
 
+.resume-page * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .resume-page-body {
   height: calc(100% - 90px);
   overflow: hidden;
@@ -652,6 +657,7 @@ a {
 .candidate-intro .contact-line {
   max-width: 430px;
   font-weight: 400;
+  overflow-wrap: anywhere;
 }
 
 .resume-section {
@@ -680,11 +686,13 @@ a {
 .expertise-grid span {
   font-size: 9px;
   line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .resume-section p {
   margin: 0;
-  white-space: pre-wrap;
+  white-space: pre-line;
 }
 
 .resume-section ul {
@@ -699,7 +707,7 @@ a {
 
 .expertise-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid #a7a7a7;
 }
 
@@ -713,7 +721,7 @@ a {
 }
 
 .expertise-grid span:nth-child(4n) {
-  border-right: 1px solid #a7a7a7;
+  border-right: 0;
 }
 
 .resume-footer {
@@ -760,9 +768,14 @@ a {
 }
 
 .experience-bullet::before {
-  content: "•";
+  content: "";
   position: absolute;
-  left: 0;
+  left: 2px;
+  top: 0.55em;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 999px;
+  background: #000000;
 }
 
 @media (max-width: 680px) {

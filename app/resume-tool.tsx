@@ -190,7 +190,7 @@ function toList(value: string, splitCommas = false) {
   const splitter = splitCommas ? /\r?\n|;|,/ : /\r?\n|;/;
   return value
     .split(splitter)
-    .map((line) => line.replace(/^[-*•\d.)\s]+/, "").trim())
+    .map((line) => line.replace(/^[-*\u2022\d.)\s]+/, "").trim())
     .filter(Boolean);
 }
 
@@ -236,7 +236,9 @@ export function ResumeTool() {
   const [hasCanvas, setHasCanvas] = useState(false);
   const [isMobileProofingOpen, setIsMobileProofingOpen] = useState(false);
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
+  const [isExtractingCv, setIsExtractingCv] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
 
   const isBlind = layout === "blind";
   const expertise = useMemo(() => toList(data.expertise, true), [data.expertise]);
@@ -336,6 +338,39 @@ export function ResumeTool() {
     reader.readAsDataURL(file);
   }
 
+  async function handleCvUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setAiError("");
+    setIsExtractingCv(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/extract-cv", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as { text?: string; error?: string };
+
+      if (!response.ok || !payload.text) {
+        setAiError(payload.error || "Could not read this CV. Try a PDF, DOCX, or text file.");
+        return;
+      }
+
+      setRawText(payload.text);
+      setData(parseCandidateText(payload.text));
+      setHasCanvas(true);
+    } catch {
+      setAiError("CV upload could not be read right now. Try copy-pasting the candidate details.");
+    } finally {
+      setIsExtractingCv(false);
+    }
+  }
+
   function formatResetTime(resetAt: string) {
     const date = new Date(resetAt);
     if (Number.isNaN(date.getTime())) return "";
@@ -411,7 +446,18 @@ export function ResumeTool() {
             />
           </label>
 
+          <input
+            ref={cvInputRef}
+            className="hidden-file"
+            type="file"
+            accept=".pdf,.docx,.txt,.text,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            onChange={handleCvUpload}
+          />
+
           <div className="button-row">
+            <button type="button" className="ghost-button" onClick={() => cvInputRef.current?.click()} disabled={isExtractingCv}>
+              {isExtractingCv ? "Reading CV..." : "Upload CV"}
+            </button>
             <button type="button" className="primary-button" onClick={handleAiParse} disabled={isAiParsing}>
               {isAiParsing ? "Reading with AI..." : "AI auto-fill"}
             </button>
@@ -698,8 +744,8 @@ function ExperienceList({ items }: { items: string[] }) {
   return (
     <div className="experience-list">
       {items.map((item) => {
-        const isBullet = /^[-*•]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed)\b/i.test(item);
-        const text = item.replace(/^[-*•\s]+/, "").trim();
+        const isBullet = /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented)\b/i.test(item);
+        const text = item.replace(/^[-*\u2022\s]+/, "").trim();
 
         return isBullet ? (
           <p className="experience-bullet" key={item}>{text}</p>
