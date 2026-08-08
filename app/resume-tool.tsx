@@ -354,10 +354,11 @@ export function ResumeTool() {
         method: "POST",
         body: formData,
       });
-      const payload = (await response.json()) as { text?: string; error?: string };
+      const payload = (await response.json()) as { text?: string; error?: string; resetAt?: string };
 
       if (!response.ok || !payload.text) {
-        setAiError(payload.error || "Could not read this CV. Try a PDF, DOCX, or text file.");
+        const resetTime = payload.resetAt ? ` Try again after ${formatResetTime(payload.resetAt)}.` : "";
+        setAiError(`${payload.error || "Could not read this CV. Try a PDF, DOCX, image, or text file."}${resetTime}`);
         return;
       }
 
@@ -450,7 +451,7 @@ export function ResumeTool() {
             ref={cvInputRef}
             className="hidden-file"
             type="file"
-            accept=".pdf,.docx,.txt,.text,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            accept=".pdf,.docx,.txt,.text,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/jpeg,image/png,image/webp"
             onChange={handleCvUpload}
           />
 
