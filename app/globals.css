@@ -547,17 +547,28 @@ a {
   align-items: start;
 }
 
-.measure-page {
+.measure-page,
+.measure-shell {
   width: 642px;
   position: absolute;
   left: -10000px;
   top: 0;
   visibility: hidden;
   pointer-events: none;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .measure-page [data-measure-unit] {
   display: flow-root;
+}
+
+.measure-page [data-measure-continued] {
+  display: flow-root;
+}
+
+.measure-shell {
+  width: 794px;
 }
 
 .resume-page {
@@ -576,7 +587,7 @@ a {
 }
 
 .resume-page-body {
-  max-height: 900px;
+  height: calc(100% - 90px);
   overflow: hidden;
 }
 
@@ -897,6 +908,11 @@ a {
   .resume-document {
     display: block;
     zoom: 1 !important;
+  }
+
+  .measure-page,
+  .measure-shell {
+    display: none !important;
   }
 
   .resume-page {

@@ -253,6 +253,8 @@ export function ResumeTool() {
     [achievements, contactDetails, data, education, experience, expertise, highlights, isBlind, photo],
   );
   const measureRef = useRef<HTMLDivElement>(null);
+  const firstPageBodyRef = useRef<HTMLDivElement>(null);
+  const laterPageBodyRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<ResumeUnit[][]>([]);
 
   useEffect(() => {
@@ -273,26 +275,49 @@ export function ResumeTool() {
       return;
     }
 
-    const measuredNodes = Array.from(measureRef.current.querySelectorAll<HTMLElement>("[data-measure-unit]"));
-    const firstPageLimit = 885;
-    const laterPageLimit = 885;
+    const measuredNodes = new Map(
+      Array.from(measureRef.current.querySelectorAll<HTMLElement>("[data-measure-unit]")).map((node) => [
+        node.dataset.measureUnit || "",
+        node,
+      ]),
+    );
+    const continuedNodes = new Map(
+      Array.from(measureRef.current.querySelectorAll<HTMLElement>("[data-measure-continued]")).map((node) => [
+        node.dataset.measureContinued || "",
+        node,
+      ]),
+    );
+    const firstPageLimit = Math.floor(firstPageBodyRef.current?.getBoundingClientRect().height || 0);
+    const laterPageLimit = Math.floor(laterPageBodyRef.current?.getBoundingClientRect().height || firstPageLimit || 0);
+    const defaultLimit = Math.max(firstPageLimit, laterPageLimit, 900);
     const nextPages: ResumeUnit[][] = [];
     let currentPage: ResumeUnit[] = [];
     let currentHeight = 0;
 
-    resumeUnits.forEach((unit, index) => {
-      const measuredHeight = Math.ceil(measuredNodes[index]?.getBoundingClientRect().height || 0) + 4;
-      const limit = nextPages.length === 0 ? firstPageLimit : laterPageLimit;
+    function pageLimit(pageIndex: number) {
+      return (pageIndex === 0 ? firstPageLimit : laterPageLimit) || defaultLimit;
+    }
+
+    function unitHeight(unit: ResumeUnit, isFirstOnPage: boolean) {
+      const node = isFirstOnPage && !unit.title && unit.sectionTitle ? continuedNodes.get(unit.id) : measuredNodes.get(unit.id);
+      return Math.ceil(node?.getBoundingClientRect().height || 0) + 2;
+    }
+
+    resumeUnits.forEach((unit) => {
+      const currentPageIndex = nextPages.length;
+      const measuredHeight = unitHeight(unit, currentPage.length === 0);
+      const limit = pageLimit(currentPageIndex);
       const shouldStartNewPage = currentPage.length > 0 && currentHeight + measuredHeight > limit;
 
       if (shouldStartNewPage) {
         nextPages.push(currentPage);
         currentPage = [];
-        currentHeight = 0;
+        currentHeight = unitHeight(unit, true);
+      } else {
+        currentHeight += measuredHeight;
       }
 
       currentPage.push(unit);
-      currentHeight += measuredHeight;
     });
 
     if (currentPage.length) nextPages.push(currentPage);
@@ -467,11 +492,28 @@ export function ResumeTool() {
               >
                 <div className="measure-page" ref={measureRef} aria-hidden="true">
                   {resumeUnits.map((unit) => (
-                    <div data-measure-unit key={unit.id}>
+                    <div data-measure-unit={unit.id} key={`normal-${unit.id}`}>
                       <ResumeUnitContent unit={unit} />
                     </div>
                   ))}
+                  {resumeUnits
+                    .filter((unit) => !unit.title && unit.sectionTitle)
+                    .map((unit) => (
+                      <div data-measure-continued={unit.id} key={`continued-${unit.id}`}>
+                        <ResumeUnitContent unit={unit} forceTitle={`${unit.sectionTitle} Continued`} />
+                      </div>
+                    ))}
                 </div>
+                <article className="resume-page measure-shell" aria-hidden="true">
+                  <ResumeHeader />
+                  <div className="resume-page-body" ref={firstPageBodyRef} />
+                  <ResumeFooter page="1" />
+                </article>
+                <article className="resume-page measure-shell" aria-hidden="true">
+                  <ResumeHeader compact />
+                  <div className="resume-page-body" ref={laterPageBodyRef} />
+                  <ResumeFooter page="2" />
+                </article>
 
                 {(pages.length ? pages : [resumeUnits]).map((pageUnits, index) => (
                   <article className="resume-page" aria-label={`Resume preview page ${index + 1}`} key={`page-${index}`}>
@@ -534,7 +576,7 @@ function buildResumeUnits({
   highlights.forEach((item, index) =>
     units.push({ id: `highlight-${index}`, kind: "listItem", sectionTitle: "Career Highlights", title: index === 0 ? "Career Highlights" : undefined, text: item }),
   );
-  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise.slice(0, 12) });
+  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise.slice(0, 8) });
   experience.forEach((item, index) =>
     units.push({
       id: `experience-${index}`,
