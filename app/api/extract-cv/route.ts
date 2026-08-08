@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse/lib/pdf-parse.js";
 
 export const runtime = "nodejs";
 
@@ -36,9 +36,7 @@ export async function POST(request: Request) {
 
   try {
     if (file.type === "application/pdf" || extension === "pdf") {
-      const parser = new PDFParse({ data: buffer });
-      const result = await parser.getText();
-      await parser.destroy();
+      const result = await pdf(buffer);
       text = result.text || "";
     } else if (
       file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
@@ -62,7 +60,10 @@ export async function POST(request: Request) {
 
   const normalized = normalizeText(text);
   if (!normalized) {
-    return NextResponse.json({ error: "No readable text was found in this CV." }, { status: 422 });
+    return NextResponse.json(
+      { error: "This PDF looks scanned or image-based. Please upload a text-based PDF/DOCX or copy-paste the CV text." },
+      { status: 422 },
+    );
   }
 
   return NextResponse.json({ text: normalized });
