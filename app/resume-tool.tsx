@@ -261,6 +261,16 @@ function docBullet(text: string) {
   });
 }
 
+function isExperienceBullet(item: string) {
+  return /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented|supervised|oversaw|prepared|monitored|conducted|inspected)\b/i.test(item);
+}
+
+function isCompanyExperienceLine(item: string) {
+  const text = item.trim();
+  if (!text || isExperienceBullet(text)) return false;
+  return /\b(present|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{4})\b/i.test(text) || text === text.toUpperCase();
+}
+
 function buildWordDocument({
   data,
   isBlind,
@@ -307,20 +317,20 @@ function buildWordDocument({
   }
   if (expertise.length) {
     const rows = [];
-    for (let i = 0; i < expertise.length; i += 4) {
+    for (let i = 0; i < expertise.length; i += 3) {
       rows.push(
         new TableRow({
-          children: expertise.slice(i, i + 4).map(
+          children: expertise.slice(i, i + 3).map(
             (skill) =>
               new TableCell({
-                width: { size: 25, type: WidthType.PERCENTAGE },
+                width: { size: 33, type: WidthType.PERCENTAGE },
                 borders: {
-                  top: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
-                  bottom: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
-                  left: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
-                  right: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
+                  top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                  bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                  left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                  right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
                 },
-                children: [docParagraph(skill)],
+                children: [docBullet(skill)],
               }),
           ),
         }),
@@ -331,7 +341,7 @@ function buildWordDocument({
   if (experience.length) {
     children.push(docHeading("Professional Experience"));
     experience.forEach((item) => {
-      const isBullet = /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented|supervised|oversaw|prepared|monitored)\b/i.test(item);
+      const isBullet = isExperienceBullet(item);
       const text = item.replace(/^[-*\u2022\s]+/, "").trim();
       children.push(isBullet ? docBullet(text) : docParagraph(text, true));
     });
@@ -793,7 +803,7 @@ function buildResumeUnits({
   highlights.forEach((item, index) =>
     units.push({ id: `highlight-${index}`, kind: "listItem", sectionTitle: "Career Highlights", title: index === 0 ? "Career Highlights" : undefined, text: item }),
   );
-  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise.slice(0, 8) });
+  if (expertise.length) units.push({ id: "expertise", kind: "expertise", title: "Core Expertise", items: expertise.slice(0, 9) });
   experience.forEach((item, index) =>
     units.push({
       id: `experience-${index}`,
@@ -901,7 +911,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }:
   }
 
   if (unit.kind === "expertise") {
-    const items = toList(data.expertise, true).slice(0, 8);
+    const items = toList(data.expertise, true).slice(0, 9);
     return (
       <ResumeSection title={unit.title || "Core Expertise"}>
         <div className="editable-resume-block">
@@ -933,7 +943,8 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }:
     const index = Number(unit.id.replace("experience-", ""));
     const items = toLines(data.experience);
     const item = items[index] || unit.text || "";
-    const isBullet = /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented|supervised|oversaw|prepared|monitored)\b/i.test(item);
+    const isBullet = isExperienceBullet(item);
+    const isCompanyLine = isCompanyExperienceLine(item);
     const text = item.replace(/^[-*\u2022\s]+/, "").trim();
 
     return (
@@ -945,7 +956,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }:
           </div>
           <div className="experience-list">
             <p
-              className={isBullet ? "experience-bullet" : "experience-meta"}
+              className={isBullet ? "experience-bullet" : isCompanyLine ? "experience-meta experience-company" : "experience-meta experience-role"}
               contentEditable
               suppressContentEditableWarning
               onBlur={(event) => updateListItem("experience", index, isBullet ? `- ${event.currentTarget.innerText}` : event.currentTarget.innerText)}
@@ -1087,13 +1098,14 @@ function ExperienceList({ items }: { items: string[] }) {
   return (
     <div className="experience-list">
       {items.map((item) => {
-        const isBullet = /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented)\b/i.test(item);
+        const isBullet = isExperienceBullet(item);
+        const isCompanyLine = isCompanyExperienceLine(item);
         const text = item.replace(/^[-*\u2022\s]+/, "").trim();
 
         return isBullet ? (
           <p className="experience-bullet" key={item}>{text}</p>
         ) : (
-          <p className="experience-meta" key={item}>{text}</p>
+          <p className={isCompanyLine ? "experience-meta experience-company" : "experience-meta experience-role"} key={item}>{text}</p>
         );
       })}
     </div>

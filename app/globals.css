@@ -338,7 +338,7 @@ a {
 
 .tool-workspace {
   display: grid;
-  grid-template-columns: minmax(310px, 390px) minmax(600px, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(640px, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -363,6 +363,9 @@ a {
   padding: 16px;
   overflow: auto;
   background: #ede8f2;
+  max-height: calc(100vh - 104px);
+  position: sticky;
+  top: 16px;
 }
 
 .field {
@@ -437,6 +440,30 @@ a {
   opacity: 0.68;
 }
 
+.primary-button,
+.ghost-button,
+.layout-toggle button,
+.resume-edit-actions button {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 15px 28px rgba(97, 63, 231, 0.26);
+}
+
+.primary-button:active:not(:disabled),
+.ghost-button:active:not(:disabled),
+.layout-toggle button:active:not(:disabled),
+.resume-edit-actions button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
 .primary-button {
   background: linear-gradient(135deg, var(--purple), var(--purple-dark));
   color: #ffffff;
@@ -448,6 +475,13 @@ a {
   border: 1px solid rgba(143, 53, 239, 0.2);
   background: #ffffff;
   color: var(--purple);
+}
+
+.ghost-button:hover:not(:disabled),
+.layout-toggle button:hover:not(:disabled) {
+  border-color: rgba(143, 53, 239, 0.42);
+  background: #f7efff;
+  box-shadow: 0 8px 18px rgba(97, 63, 231, 0.12);
 }
 
 .layout-toggle {
@@ -545,6 +579,7 @@ a {
   display: grid;
   gap: 18px;
   align-items: start;
+  justify-items: center;
 }
 
 .measure-page,
@@ -584,6 +619,7 @@ a {
   box-shadow: 0 12px 34px rgba(28, 16, 44, 0.12);
   font-family: Arial, Helvetica, sans-serif;
   overflow: hidden;
+  cursor: text;
 }
 
 .resume-page * {
@@ -748,25 +784,39 @@ a {
   font-weight: 800;
   line-height: 1;
   padding: 3px 7px;
+  cursor: pointer;
+}
+
+.resume-edit-actions button:hover {
+  border-color: #8c30e5;
+  background: #8c30e5;
+  color: #ffffff;
+  box-shadow: 0 5px 12px rgba(124, 46, 230, 0.2);
 }
 
 .expertise-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid #a7a7a7;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 18px;
+  padding-left: 12px;
 }
 
 .expertise-grid span {
-  min-height: 32px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  border-right: 1px solid #a7a7a7;
-  border-bottom: 1px solid #a7a7a7;
+  min-height: 16px;
+  position: relative;
+  display: block;
+  padding-left: 10px;
 }
 
-.expertise-grid span:nth-child(4n) {
-  border-right: 0;
+.expertise-grid span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.58em;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 999px;
+  background: #000000;
 }
 
 .resume-footer {
@@ -794,7 +844,7 @@ a {
 
 .experience-list {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .experience-list p {
@@ -805,6 +855,20 @@ a {
 
 .experience-meta {
   font-weight: 700;
+}
+
+.experience-company {
+  margin-top: 8px !important;
+  letter-spacing: 0;
+}
+
+.resume-section h4 + .editable-resume-block .experience-company,
+.resume-section h4 + .experience-list .experience-company {
+  margin-top: 0 !important;
+}
+
+.experience-role {
+  margin-top: 1px !important;
 }
 
 .experience-bullet {
@@ -867,6 +931,11 @@ a {
   }
 
   .input-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .preview-panel {
     position: static;
     max-height: none;
   }
