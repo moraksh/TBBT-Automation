@@ -591,7 +591,7 @@ a {
   align-items: center;
   justify-content: flex-start;
   padding-top: 0;
-  max-height: calc(100vh - 320px);
+  max-height: calc(100vh - 230px);
   min-height: calc(1123px * var(--preview-scale));
   overflow: auto;
   scroll-margin-top: 12px;
@@ -726,12 +726,21 @@ a {
 }
 
 .candidate-intro + .resume-section,
-.resume-section:has(h4) {
+.resume-section:has(.resume-section-heading) {
   margin-top: 18px;
 }
 
-.resume-section h4 {
+.resume-section-heading {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 0 10px;
+}
+
+.resume-section h4 {
+  margin: 0;
   padding: 0;
   background: transparent;
   color: #6d1265;
@@ -791,6 +800,19 @@ a {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
+}
+
+.resume-section-heading .heading-actions {
+  position: static;
+  flex: 0 0 auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.resume-section:hover .heading-actions,
+.resume-section:focus-within .heading-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .editable-resume-block:hover .resume-edit-actions,
@@ -862,8 +884,8 @@ a {
   letter-spacing: 0;
 }
 
-.resume-section h4 + .editable-resume-block .experience-company,
-.resume-section h4 + .experience-list .experience-company {
+.resume-section-heading + .editable-resume-block .experience-company,
+.resume-section-heading + .experience-list .experience-company {
   margin-top: 0 !important;
 }
 

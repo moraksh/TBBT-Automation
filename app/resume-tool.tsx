@@ -450,10 +450,9 @@ export function ResumeTool() {
   useEffect(() => {
     function updateMobileScale() {
       if (typeof window === "undefined") return;
-      const widthScale = window.innerWidth <= 720 ? (window.innerWidth - 32) / 794 : (window.innerWidth - 500) / 794;
-      const heightScale = (window.innerHeight - 310) / 1123;
-      const minScale = window.innerWidth <= 720 ? 0.34 : 0.52;
-      const nextScale = Math.min(1, Math.max(minScale, Math.min(widthScale, heightScale)));
+      const isMobile = window.innerWidth <= 720;
+      const widthScale = isMobile ? (window.innerWidth - 32) / 794 : (window.innerWidth - 760) / 794;
+      const nextScale = isMobile ? Math.min(1, Math.max(0.34, widthScale)) : Math.min(1, Math.max(0.78, widthScale));
       setMobilePreviewScale(nextScale);
     }
 
@@ -531,6 +530,11 @@ export function ResumeTool() {
     window.addEventListener("keydown", handleUndo);
     return () => window.removeEventListener("keydown", handleUndo);
   }, [pageBreakHistory]);
+
+  useEffect(() => {
+    if (!hasCanvas) return;
+    previewDocumentRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [hasCanvas, layout, mobilePreviewScale]);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -660,7 +664,8 @@ export function ResumeTool() {
   }
 
   function scrollToPreviewDocument() {
-    previewDocumentRef.current?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    previewDocumentRef.current?.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    previewDocumentRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }
 
   return (
@@ -943,6 +948,12 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     );
   }
 
+  const nextPageAction = unit.title ? (
+    <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
+      {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
+    </button>
+  ) : null;
+
   if (unit.kind === "intro") {
     const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
     return (
@@ -973,7 +984,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
   if (unit.kind === "expertise") {
     const items = toList(data.expertise, true).slice(0, 9);
     return (
-      <ResumeSection title={unit.title || "Core Expertise"}>
+      <ResumeSection title={unit.title || "Core Expertise"} actions={nextPageAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("expertise", items.length - 1, "New skill")}>Add skill</button>
@@ -1009,13 +1020,10 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     const displayText = isBlind && isCompanyLine ? text.replace(/^([^|]+)/, "Confidential") : text;
 
     return (
-      <ResumeSection title={forceTitle || unit.title}>
+      <ResumeSection title={forceTitle || unit.title} actions={nextPageAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("experience", index, "- New responsibility")}>Add line</button>
-            <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
-              {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
-            </button>
             <button type="button" onClick={() => removeListItem("experience", index)}>Remove</button>
           </div>
           <div className="experience-list">
@@ -1044,13 +1052,10 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     const value = items[index] || unit.text || "";
 
     return (
-      <ResumeSection title={forceTitle || unit.title}>
+      <ResumeSection title={forceTitle || unit.title} actions={nextPageAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem(field, index)}>Add line</button>
-            <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
-              {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
-            </button>
             <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
           </div>
           {field === "highlights" || field === "achievements" || field === "education" ? (
@@ -1071,12 +1076,9 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
   const field = unit.id === "summary" ? "summary" : unit.id === "additional-skills" ? "additionalSkills" : unit.id === "alignment" ? "alignment" : null;
   if (field) {
     return (
-      <ResumeSection title={forceTitle || unit.title}>
+      <ResumeSection title={forceTitle || unit.title} actions={nextPageAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
-            <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
-              {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
-            </button>
             <button type="button" onClick={() => updateField(field, "")}>Remove block</button>
           </div>
           <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField(field, event.currentTarget.innerText)}>
@@ -1146,10 +1148,15 @@ function ResumeUnitContent({ unit, forceTitle }: { unit: ResumeUnit; forceTitle?
   );
 }
 
-function ResumeSection({ title, children }: { title?: string; children: ReactNode }) {
+function ResumeSection({ title, children, actions }: { title?: string; children: ReactNode; actions?: ReactNode }) {
   return (
     <section className="resume-section">
-      {title ? <h4>{title}</h4> : null}
+      {title ? (
+        <div className="resume-section-heading">
+          <h4>{title}</h4>
+          {actions ? <div className="resume-edit-actions heading-actions no-print">{actions}</div> : null}
+        </div>
+      ) : null}
       {children}
     </section>
   );
