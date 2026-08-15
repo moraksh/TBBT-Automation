@@ -1053,7 +1053,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
             </button>
             <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
           </div>
-          {field === "highlights" ? (
+          {field === "highlights" || field === "achievements" || field === "education" ? (
             <p contentEditable suppressContentEditableWarning onBlur={(event) => updateListItem(field, index, event.currentTarget.innerText)}>
               {value}
             </p>
@@ -1130,9 +1130,11 @@ function ResumeUnitContent({ unit, forceTitle }: { unit: ResumeUnit; forceTitle?
   }
 
   if (unit.kind === "listItem") {
+    const isPlainLine = unit.id.startsWith("highlight-") || unit.id.startsWith("achievement-") || unit.id.startsWith("education-");
+
     return (
       <ResumeSection title={forceTitle || unit.title}>
-        {unit.id.startsWith("highlight-") ? <p>{unit.text}</p> : <BulletList items={unit.text ? [unit.text] : []} />}
+        {isPlainLine ? <p>{unit.text}</p> : <BulletList items={unit.text ? [unit.text] : []} />}
       </ResumeSection>
     );
   }

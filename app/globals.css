@@ -361,7 +361,7 @@ a {
 
 .preview-panel {
   padding: 16px;
-  overflow: visible;
+  overflow: hidden;
   background: #ede8f2;
   min-height: auto;
 }
@@ -533,7 +533,9 @@ a {
 
 .preview-toolbar {
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 5;
 }
 
 .preview-actions {
@@ -589,7 +591,9 @@ a {
   align-items: center;
   justify-content: flex-start;
   padding-top: 0;
+  max-height: calc(100vh - 320px);
   min-height: calc(1123px * var(--preview-scale));
+  overflow: auto;
   scroll-margin-top: 12px;
 }
 
@@ -639,6 +643,7 @@ a {
   width: calc(794px * var(--preview-scale));
   height: calc(1123px * var(--preview-scale));
   flex: 0 0 auto;
+  margin: 0 auto;
 }
 
 .resume-page-frame .resume-page {
