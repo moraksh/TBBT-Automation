@@ -567,12 +567,18 @@ export function ResumeTool() {
       return height;
     }
 
+    function renderedContentHeight(body: HTMLDivElement) {
+      const bodyTop = body.getBoundingClientRect().top;
+      const childBottoms = Array.from(body.children).map((child) => (child as HTMLElement).getBoundingClientRect().bottom - bodyTop);
+      return Math.max(0, ...childBottoms.map(Math.ceil));
+    }
+
     for (let pageIndex = 0; pageIndex < nextPages.length - 1; pageIndex += 1) {
       const body = renderedPageBodyRefs.current[pageIndex];
       const limit = Math.floor(body?.clientHeight || 0);
       if (!body || !limit) continue;
 
-      let usedHeight = Math.ceil(body.scrollHeight);
+      let usedHeight = renderedContentHeight(body);
       const targetPage = nextPages[pageIndex];
       const sourcePage = nextPages[pageIndex + 1];
 
