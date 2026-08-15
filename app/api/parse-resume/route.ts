@@ -159,15 +159,17 @@ Rules:
 - Use only details that appear in the candidate text.
 - Do not add, invent, embellish, infer, or improve facts.
 - Put information under the best matching field.
-- Lightly reformat for a professional resume: concise bullets, clean labels, consistent dates, corrected spacing/capitalization, and remove duplicated headings.
-- Preserve the original meaning and factual details.
+- Lightly reformat for a professional resume: clean labels, consistent dates, corrected spacing/capitalization, and remove duplicated headings.
+- Preserve every meaningful factual detail from the candidate text. Do not drop named industries, countries, regions, certifications, regulatory frameworks, tools, technologies, leadership scope, years of experience, or explicit competencies.
+- If the source has an Executive Profile, keep its full substance across summary and highlights. Summary may be 1 to 2 strong paragraphs when needed; do not compress it so much that facts disappear.
 - If a field is missing, return an empty string.
-- Do not return paragraphs copied as-is from the pasted data.
+- Do not return paragraphs copied as-is from the pasted data, but keep all facts while rewriting lightly.
 - Convert responsibilities and achievements into short action-oriented bullets without changing the facts.
-- Career Highlights should be one short professional paragraph, not bullet points.
+- Career Highlights should be a professional paragraph or concise lines only when the source gives multiple distinct facts. Do not add bullet symbols.
 - Remove labels from skill names, for example convert "Languages: RPG/400" to "RPG/400".
-- Core Expertise should contain only the 6 to 8 strongest skills, tools, domains, technologies, or capabilities separated by commas or new lines.
-- Do not include every keyword from the resume in Core Expertise.
+- Core Expertise must preserve all explicit skills, competencies, frameworks, domains, tools, and technologies listed under headings such as Core Expertise, Core Competencies, Skills, Technical Skills, or Areas of Expertise.
+- Do not reduce Core Expertise to only a few items when the pasted content provides more valid competencies. Include all non-duplicate competency items, separated by commas or new lines.
+- Keep framework details inside skills when provided, for example "Anti Corruption / Anti Bribery (FCPA, UK Bribery Act)" and "SOX, PCI DSS, IT Audit & Security Standards".
 - For Professional Experience, format as:
   Company / Client | Dates
   Role / Project | Location or technology if provided
