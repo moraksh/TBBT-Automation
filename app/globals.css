@@ -690,24 +690,24 @@ a {
 
 .candidate-intro {
   display: block;
-  padding: 36px 0 0;
+  padding: 42px 0 0;
 }
 
 .candidate-intro h3 {
   margin: 0;
   color: #000000;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
 .candidate-intro p {
-  margin: 5px 0 0;
+  margin: 7px 0 0;
   color: #000000;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.25;
 }
 
 .candidate-intro .contact-line {
@@ -722,26 +722,26 @@ a {
 
 .candidate-intro + .resume-section,
 .resume-section:has(h4) {
-  margin-top: 12px;
+  margin-top: 18px;
 }
 
 .resume-section h4 {
-  margin: 0 0 5px;
+  margin: 0 0 10px;
   padding: 0;
   background: transparent;
   color: #6d1265;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   letter-spacing: 0;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .resume-section p,
 .resume-section li,
 .expertise-table span {
-  font-size: 12px;
-  line-height: 1.15;
+  font-size: 13px;
+  line-height: 1.35;
   overflow-wrap: anywhere;
   word-break: normal;
 }
@@ -753,12 +753,12 @@ a {
 
 .resume-section ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 30px;
   list-style-position: outside;
 }
 
 .resume-section li + li {
-  margin-top: 2px;
+  margin-top: 5px;
 }
 
 .editable-resume-block {
@@ -823,7 +823,7 @@ a {
 .expertise-table {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 44px;
+  column-gap: 58px;
   row-gap: 9px;
   border: 0;
 }
@@ -837,13 +837,13 @@ a {
 
 .experience-list {
   display: grid;
-  gap: 3px;
+  gap: 5px;
 }
 
 .experience-list p {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.15;
+  font-size: 13px;
+  line-height: 1.3;
 }
 
 .experience-meta {
@@ -851,7 +851,7 @@ a {
 }
 
 .experience-company {
-  margin-top: 9px !important;
+  margin-top: 14px !important;
   letter-spacing: 0;
 }
 

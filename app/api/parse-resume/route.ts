@@ -164,6 +164,7 @@ Rules:
 - If a field is missing, return an empty string.
 - Do not return paragraphs copied as-is from the pasted data.
 - Convert responsibilities and achievements into short action-oriented bullets without changing the facts.
+- Career Highlights should be one short professional paragraph, not bullet points.
 - Remove labels from skill names, for example convert "Languages: RPG/400" to "RPG/400".
 - Core Expertise should contain only the 6 to 8 strongest skills, tools, domains, technologies, or capabilities separated by commas or new lines.
 - Do not include every keyword from the resume in Core Expertise.

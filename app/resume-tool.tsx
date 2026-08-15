@@ -236,7 +236,7 @@ function docText(text: string, options: { bold?: boolean; color?: string; size?:
     text,
     bold: options.bold,
     color: options.color || "000000",
-    size: options.size || 18,
+    size: options.size || 20,
     font: "Arial",
     underline: options.underline ? { type: UnderlineType.SINGLE } : undefined,
   });
@@ -244,14 +244,14 @@ function docText(text: string, options: { bold?: boolean; color?: string; size?:
 
 function docHeading(text: string) {
   return new Paragraph({
-    spacing: { before: 180, after: 80 },
-    children: [docText(text, { bold: true, color: "6D1265", size: 18, underline: true })],
+    spacing: { before: 220, after: 110 },
+    children: [docText(text, { bold: true, color: "6D1265", size: 22 })],
   });
 }
 
 function docParagraph(text: string, bold = false) {
   return new Paragraph({
-    spacing: { after: 70 },
+    spacing: { after: 95, line: 280 },
     children: [docText(text, { bold })],
   });
 }
@@ -259,7 +259,7 @@ function docParagraph(text: string, bold = false) {
 function docBullet(text: string) {
   return new Paragraph({
     bullet: { level: 0 },
-    spacing: { after: 45 },
+    spacing: { after: 70, line: 260 },
     children: [docText(text)],
   });
 }
@@ -312,7 +312,7 @@ function buildWordDocument({
     children.push(docHeading("Executive Summary OR Summary"), docParagraph(data.summary));
   }
   if (highlights.length) {
-    children.push(docHeading("Career Highlights"), ...highlights.map(docBullet));
+    children.push(docHeading("Career Highlights"), docParagraph(highlights.join(" ")));
   }
   if (expertise.length) {
     const rows = [];
@@ -1002,10 +1002,16 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
             </button>
             <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
           </div>
-          <BulletList
-            items={[value]}
-            onBlur={(nextValue) => updateListItem(field, index, nextValue)}
-          />
+          {field === "highlights" ? (
+            <p contentEditable suppressContentEditableWarning onBlur={(event) => updateListItem(field, index, event.currentTarget.innerText)}>
+              {value}
+            </p>
+          ) : (
+            <BulletList
+              items={[value]}
+              onBlur={(nextValue) => updateListItem(field, index, nextValue)}
+            />
+          )}
         </div>
       </ResumeSection>
     );
@@ -1075,7 +1081,7 @@ function ResumeUnitContent({ unit, forceTitle }: { unit: ResumeUnit; forceTitle?
   if (unit.kind === "listItem") {
     return (
       <ResumeSection title={forceTitle || unit.title}>
-        <BulletList items={unit.text ? [unit.text] : []} />
+        {unit.id.startsWith("highlight-") ? <p>{unit.text}</p> : <BulletList items={unit.text ? [unit.text] : []} />}
       </ResumeSection>
     );
   }
