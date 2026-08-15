@@ -249,9 +249,9 @@ function docHeading(text: string) {
   });
 }
 
-function docParagraph(text: string, bold = false) {
+function docParagraph(text: string, bold = false, spacing: { before?: number; after?: number; line?: number } = {}) {
   return new Paragraph({
-    spacing: { after: 95, line: 280 },
+    spacing: { after: spacing.after ?? 95, before: spacing.before, line: spacing.line ?? 280 },
     children: [docText(text, { bold })],
   });
 }
@@ -342,11 +342,20 @@ function buildWordDocument({
   }
   if (experience.length) {
     children.push(docHeading("Professional Experience"));
+    let companyCount = 0;
     experience.forEach((item) => {
       const isBullet = isExperienceBullet(item);
       const text = item.replace(/^[-*\u2022\s]+/, "").trim();
-      const companyLine = isBlind && isCompanyExperienceLine(text) ? text.replace(/^([^|]+)/, "Confidential") : text;
-      children.push(isBullet ? docBullet(text) : docParagraph(companyLine, true));
+      const isCompanyLine = isCompanyExperienceLine(text);
+      const companyLine = isBlind && isCompanyLine ? text.replace(/^([^|]+)/, "Confidential") : text;
+
+      if (isBullet) {
+        children.push(docBullet(text));
+        return;
+      }
+
+      children.push(docParagraph(companyLine, true, { before: isCompanyLine && companyCount > 0 ? 180 : 0, after: 55 }));
+      if (isCompanyLine) companyCount += 1;
     });
   }
   if (achievements.length) children.push(docHeading("Achievements"), ...achievements.map(docBullet));
