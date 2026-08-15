@@ -325,10 +325,10 @@ function buildWordDocument({
                 width: { size: 33, type: WidthType.PERCENTAGE },
                 margins: { top: 45, bottom: 45, left: 80, right: 80 },
                 borders: {
-                  top: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
-                  bottom: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
-                  left: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
-                  right: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
+                  top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                  bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                  left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+                  right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
                 },
                 children: [docParagraph(skill)],
               }),
@@ -429,7 +429,10 @@ export function ResumeTool() {
   useEffect(() => {
     function updateMobileScale() {
       if (typeof window === "undefined") return;
-      const nextScale = window.innerWidth <= 720 ? Math.min(1, Math.max(0.34, (window.innerWidth - 32) / 794)) : 1;
+      const widthScale = window.innerWidth <= 720 ? (window.innerWidth - 32) / 794 : (window.innerWidth - 500) / 794;
+      const heightScale = (window.innerHeight - 310) / 1123;
+      const minScale = window.innerWidth <= 720 ? 0.34 : 0.52;
+      const nextScale = Math.min(1, Math.max(minScale, Math.min(widthScale, heightScale)));
       setMobilePreviewScale(nextScale);
     }
 
@@ -729,7 +732,7 @@ export function ResumeTool() {
                 className="resume-document"
                 aria-label="Resume preview"
                 ref={previewDocumentRef}
-                style={{ zoom: mobilePreviewScale } as CSSProperties}
+                style={{ "--preview-scale": mobilePreviewScale } as CSSProperties}
               >
                 <div className="measure-page" ref={measureRef} aria-hidden="true">
                   {resumeUnits.map((unit) => (
@@ -754,22 +757,24 @@ export function ResumeTool() {
                 </article>
 
                 {(pages.length ? pages : [resumeUnits]).map((pageUnits, index) => (
-                  <article className="resume-page" aria-label={`Resume preview page ${index + 1}`} key={`page-${index}`}>
-                    {index === 0 ? <ResumeHeader /> : null}
-                    <div className="resume-page-body">
-                      {pageUnits.map((unit) => (
-                        <EditableResumeUnitContent
-                          data={data}
-                          forceTitle={!unit.title && unit.sectionTitle && pageUnits[0].id === unit.id ? `${unit.sectionTitle} Continued` : undefined}
-                          isBlind={isBlind}
-                          setData={setData}
-                          togglePageBreakBefore={togglePageBreakBefore}
-                          unit={unit}
-                          key={unit.id}
-                        />
-                      ))}
-                    </div>
-                  </article>
+                  <div className="resume-page-frame" key={`page-${index}`}>
+                    <article className="resume-page" aria-label={`Resume preview page ${index + 1}`}>
+                      {index === 0 ? <ResumeHeader /> : null}
+                      <div className="resume-page-body">
+                        {pageUnits.map((unit) => (
+                          <EditableResumeUnitContent
+                            data={data}
+                            forceTitle={!unit.title && unit.sectionTitle && pageUnits[0].id === unit.id ? `${unit.sectionTitle} Continued` : undefined}
+                            isBlind={isBlind}
+                            setData={setData}
+                            togglePageBreakBefore={togglePageBreakBefore}
+                            unit={unit}
+                            key={unit.id}
+                          />
+                        ))}
+                      </div>
+                    </article>
+                  </div>
                 ))}
               </div>
             </>

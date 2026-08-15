@@ -582,13 +582,14 @@ a {
 }
 
 .resume-document {
+  --preview-scale: 1;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: calc(18px * var(--preview-scale));
   align-items: center;
   justify-content: flex-start;
   padding-top: 0;
-  min-height: 1123px;
+  min-height: calc(1123px * var(--preview-scale));
   scroll-margin-top: 12px;
 }
 
@@ -632,6 +633,18 @@ a {
   font-family: Arial, Helvetica, sans-serif;
   overflow: hidden;
   cursor: text;
+}
+
+.resume-page-frame {
+  width: calc(794px * var(--preview-scale));
+  height: calc(1123px * var(--preview-scale));
+  flex: 0 0 auto;
+}
+
+.resume-page-frame .resume-page {
+  margin: 0;
+  transform: scale(var(--preview-scale));
+  transform-origin: top left;
 }
 
 .resume-page * {
@@ -810,17 +823,16 @@ a {
 .expertise-table {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid #000000;
-  border-left: 1px solid #000000;
+  column-gap: 44px;
+  row-gap: 9px;
+  border: 0;
 }
 
 .expertise-table span {
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  padding: 5px 6px;
-  border-right: 1px solid #000000;
-  border-bottom: 1px solid #000000;
+  min-height: 0;
+  display: block;
+  padding: 0;
+  border: 0;
 }
 
 .experience-list {
@@ -1007,7 +1019,7 @@ a {
 
   .resume-document {
     display: block;
-    zoom: 1 !important;
+    --preview-scale: 1 !important;
   }
 
   .no-print {
@@ -1032,7 +1044,26 @@ a {
     -webkit-print-color-adjust: exact;
   }
 
+  .resume-page-frame {
+    width: 210mm;
+    height: 297mm;
+  }
+
+  .resume-page-frame .resume-page {
+    transform: none;
+  }
+
   .resume-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .resume-page-frame {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .resume-page-frame:last-child {
     break-after: auto;
     page-break-after: auto;
   }
