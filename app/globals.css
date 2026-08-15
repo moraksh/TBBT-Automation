@@ -361,11 +361,8 @@ a {
 
 .preview-panel {
   padding: 16px;
-  overflow: auto;
+  overflow: visible;
   background: #ede8f2;
-  max-height: calc(100vh - 104px);
-  position: sticky;
-  top: 16px;
 }
 
 .field {
@@ -580,6 +577,7 @@ a {
   gap: 18px;
   align-items: start;
   justify-items: center;
+  padding-top: 0;
 }
 
 .measure-page,
@@ -792,6 +790,12 @@ a {
   background: #8c30e5;
   color: #ffffff;
   box-shadow: 0 5px 12px rgba(124, 46, 230, 0.2);
+}
+
+.resume-edit-actions button.active {
+  border-color: #050506;
+  background: #050506;
+  color: #ffffff;
 }
 
 .expertise-grid {

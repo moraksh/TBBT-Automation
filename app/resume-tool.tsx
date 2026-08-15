@@ -27,6 +27,7 @@ type ResumeUnit = {
   kind: "intro" | "paragraph" | "listItem" | "expertise" | "experienceItem";
   text?: string;
   items?: string[];
+  forcePageBreakBefore?: boolean;
 };
 
 type EditableResumeProps = {
@@ -35,6 +36,7 @@ type EditableResumeProps = {
   data: ResumeData;
   isBlind: boolean;
   setData: (data: ResumeData) => void;
+  togglePageBreakBefore: (unitId: string) => void;
 };
 
 const emptyResume: ResumeData = {
@@ -401,6 +403,7 @@ export function ResumeTool() {
   const [isMobileProofingOpen, setIsMobileProofingOpen] = useState(false);
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
   const [isExtractingCv, setIsExtractingCv] = useState(false);
+  const [forcedPageBreakIds, setForcedPageBreakIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
 
@@ -415,8 +418,8 @@ export function ResumeTool() {
     [data.email, data.linkedin, data.location, data.phone],
   );
   const resumeUnits = useMemo(
-    () => buildResumeUnits({ data, isBlind, contactDetails, photo, expertise, highlights, experience, achievements, education }),
-    [achievements, contactDetails, data, education, experience, expertise, highlights, isBlind, photo],
+    () => buildResumeUnits({ data, isBlind, contactDetails, photo, expertise, highlights, experience, achievements, education, forcedPageBreakIds }),
+    [achievements, contactDetails, data, education, experience, expertise, forcedPageBreakIds, highlights, isBlind, photo],
   );
   const measureRef = useRef<HTMLDivElement>(null);
   const firstPageBodyRef = useRef<HTMLDivElement>(null);
@@ -473,7 +476,7 @@ export function ResumeTool() {
       const currentPageIndex = nextPages.length;
       const measuredHeight = unitHeight(unit, currentPage.length === 0);
       const limit = pageLimit(currentPageIndex);
-      const shouldStartNewPage = currentPage.length > 0 && currentHeight + measuredHeight > limit;
+      const shouldStartNewPage = currentPage.length > 0 && (unit.forcePageBreakBefore || currentHeight + measuredHeight > limit);
 
       if (shouldStartNewPage) {
         nextPages.push(currentPage);
@@ -599,6 +602,10 @@ export function ResumeTool() {
     const document = buildWordDocument({ data, isBlind, contactDetails, logoData, expertise, highlights, experience, achievements, education });
     const blob = await Packer.toBlob(document);
     downloadBlob(blob, `${safeFilename(isBlind ? data.title : data.candidateName)}.docx`);
+  }
+
+  function togglePageBreakBefore(unitId: string) {
+    setForcedPageBreakIds((ids) => (ids.includes(unitId) ? ids.filter((id) => id !== unitId) : [...ids, unitId]));
   }
 
   return (
@@ -749,6 +756,7 @@ export function ResumeTool() {
                           forceTitle={!unit.title && unit.sectionTitle && pageUnits[0].id === unit.id ? `${unit.sectionTitle} Continued` : undefined}
                           isBlind={isBlind}
                           setData={setData}
+                          togglePageBreakBefore={togglePageBreakBefore}
                           unit={unit}
                           key={unit.id}
                         />
@@ -776,6 +784,7 @@ function buildResumeUnits({
   experience,
   achievements,
   education,
+  forcedPageBreakIds,
 }: {
   data: ResumeData;
   isBlind: boolean;
@@ -786,6 +795,7 @@ function buildResumeUnits({
   experience: string[];
   achievements: string[];
   education: string[];
+  forcedPageBreakIds: string[];
 }) {
   const units: ResumeUnit[] = [];
   units.push({
@@ -828,7 +838,7 @@ function buildResumeUnits({
   if (data.additionalSkills) units.push({ id: "additional-skills", kind: "paragraph", title: "Technology / Additional Skills / Language", text: data.additionalSkills });
   if (data.alignment) units.push({ id: "alignment", kind: "paragraph", title: "Alignment with the role applying", text: data.alignment });
 
-  return units;
+  return units.map((unit) => ({ ...unit, forcePageBreakBefore: forcedPageBreakIds.includes(unit.id) }));
 }
 
 function ResumeHeader({ compact = false }: { compact?: boolean }) {
@@ -848,7 +858,7 @@ function ResumeFooter({ page }: { page: string }) {
   );
 }
 
-function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }: EditableResumeProps) {
+function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, togglePageBreakBefore }: EditableResumeProps) {
   function updateField(field: keyof ResumeData, value: string) {
     setData({ ...data, [field]: value.trim() });
   }
@@ -952,6 +962,9 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }:
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("experience", index, "- New responsibility")}>Add line</button>
+            <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
+              Next page
+            </button>
             <button type="button" onClick={() => removeListItem("experience", index)}>Remove</button>
           </div>
           <div className="experience-list">
@@ -984,6 +997,9 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }:
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem(field, index)}>Add line</button>
+            <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
+              Next page
+            </button>
             <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
           </div>
           <BulletList
@@ -1001,6 +1017,9 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }:
       <ResumeSection title={forceTitle || unit.title}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
+            <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
+              Next page
+            </button>
             <button type="button" onClick={() => updateField(field, "")}>Remove block</button>
           </div>
           <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField(field, event.currentTarget.innerText)}>
