@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, Dispatch, MouseEvent, ReactNode, SetStateAction, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AlignmentType, BorderStyle, Document, ImageRun, LevelFormat, Packer, Paragraph, Table, TableCell, TableRow, TextRun, UnderlineType, WidthType } from "docx";
 
 type ResumeData = {
@@ -35,7 +35,7 @@ type EditableResumeProps = {
   forceTitle?: string;
   data: ResumeData;
   isBlind: boolean;
-  setData: (data: ResumeData) => void;
+  setData: Dispatch<SetStateAction<ResumeData>>;
   togglePageBreakBefore: (unitId: string) => void;
 };
 
@@ -1017,34 +1017,46 @@ function ResumeHeader() {
 
 function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, togglePageBreakBefore }: EditableResumeProps) {
   function updateField(field: keyof ResumeData, value: string) {
-    setData({ ...data, [field]: value.trim() });
+    setData((currentData) => ({ ...currentData, [field]: value.trim() }));
   }
 
   function updateListField(field: keyof ResumeData, items: string[]) {
-    setData({ ...data, [field]: listToField(items) });
+    setData((currentData) => ({ ...currentData, [field]: listToField(items) }));
   }
 
-  function listForUnit(field: keyof ResumeData) {
-    return field === "expertise" ? toList(data[field], true) : field === "experience" ? toLines(data[field]) : toList(data[field]);
+  function listForUnit(field: keyof ResumeData, sourceData = data) {
+    return field === "expertise" ? toList(sourceData[field], true) : field === "experience" ? toLines(sourceData[field]) : toList(sourceData[field]);
   }
 
   function updateListItem(field: keyof ResumeData, index: number, value: string) {
-    const items = listForUnit(field);
-    items[index] = value.trim();
-    updateListField(field, items);
+    setData((currentData) => {
+      const items = listForUnit(field, currentData);
+      items[index] = value.trim();
+      return { ...currentData, [field]: listToField(items) };
+    });
   }
 
   function addListItem(field: keyof ResumeData, index: number, value = "New item") {
-    const items = listForUnit(field);
-    items.splice(index + 1, 0, value);
-    updateListField(field, items);
+    setData((currentData) => {
+      const items = listForUnit(field, currentData);
+      items.splice(index + 1, 0, value);
+      return { ...currentData, [field]: listToField(items) };
+    });
   }
 
   function removeListItem(field: keyof ResumeData, index: number) {
-    updateListField(
-      field,
-      listForUnit(field).filter((_, itemIndex) => itemIndex !== index),
-    );
+    setData((currentData) => ({
+      ...currentData,
+      [field]: listToField(listForUnit(field, currentData).filter((_, itemIndex) => itemIndex !== index)),
+    }));
+  }
+
+  function removeBlock(field: keyof ResumeData) {
+    setData((currentData) => ({ ...currentData, [field]: "" }));
+  }
+
+  function preventEditBlur(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
   }
 
   const pageBreakAction = (
@@ -1089,7 +1101,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("expertise", items.length - 1, "New skill")}>Add skill</button>
-            <button type="button" onClick={() => updateField("expertise", "")}>Remove block</button>
+            <button type="button" onMouseDown={preventEditBlur} onClick={() => removeBlock("expertise")}>Remove block</button>
           </div>
           <div className="expertise-table">
             {items.map((skill, index) => (
@@ -1183,7 +1195,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             {inlinePageBreakAction}
-            <button type="button" onClick={() => updateField(field, "")}>Remove block</button>
+            <button type="button" onMouseDown={preventEditBlur} onClick={() => removeBlock(field)}>Remove block</button>
           </div>
           <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField(field, event.currentTarget.innerText)}>
             {data[field]}
