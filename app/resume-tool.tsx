@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { AlignmentType, BorderStyle, Document, ImageRun, Packer, Paragraph, Table, TableCell, TableRow, TextRun, UnderlineType, WidthType } from "docx";
+import { AlignmentType, BorderStyle, Document, ImageRun, LevelFormat, Packer, Paragraph, Table, TableCell, TableRow, TextRun, UnderlineType, WidthType } from "docx";
 
 type ResumeData = {
   candidateName: string;
@@ -258,7 +258,8 @@ function docParagraph(text: string, bold = false) {
 
 function docBullet(text: string) {
   return new Paragraph({
-    bullet: { level: 0 },
+    numbering: { reference: "resume-bullets", level: 0 },
+    indent: { left: 360, hanging: 180 },
     spacing: { after: 70, line: 260 },
     children: [docText(text)],
   });
@@ -309,21 +310,22 @@ function buildWordDocument({
   if (contactDetails.length) children.push(docParagraph(contactDetails.join(" | ")));
 
   if (data.summary) {
-    children.push(docHeading("Executive Summary OR Summary"), docParagraph(data.summary));
+    children.push(docHeading("Executive Summary"), docParagraph(data.summary));
   }
   if (highlights.length) {
     children.push(docHeading("Career Highlights"), docParagraph(highlights.join(" ")));
   }
   if (expertise.length) {
     const rows = [];
+    const columnWidths = [38, 26, 36];
     for (let i = 0; i < expertise.length; i += 3) {
       rows.push(
         new TableRow({
           children: expertise.slice(i, i + 3).map(
-            (skill) =>
+            (skill, cellIndex) =>
               new TableCell({
-                width: { size: 33, type: WidthType.PERCENTAGE },
-                margins: { top: 45, bottom: 45, left: 80, right: 80 },
+                width: { size: columnWidths[cellIndex] || 33, type: WidthType.PERCENTAGE },
+                margins: { top: 45, bottom: 45, left: 0, right: 120 },
                 borders: {
                   top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
                   bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
@@ -353,6 +355,24 @@ function buildWordDocument({
   if (data.alignment) children.push(docHeading("Alignment with the role applying"), docParagraph(data.alignment));
 
   return new Document({
+    numbering: {
+      config: [
+        {
+          reference: "resume-bullets",
+          levels: [
+            {
+              level: 0,
+              format: LevelFormat.BULLET,
+              text: "\u2022",
+              alignment: AlignmentType.LEFT,
+              style: {
+                paragraph: { indent: { left: 360, hanging: 180 } },
+              },
+            },
+          ],
+        },
+      ],
+    },
     sections: [
       {
         properties: {
@@ -403,6 +423,7 @@ export function ResumeTool() {
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
   const [isExtractingCv, setIsExtractingCv] = useState(false);
   const [forcedPageBreakIds, setForcedPageBreakIds] = useState<string[]>([]);
+  const [pageBreakHistory, setPageBreakHistory] = useState<string[][]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
   const previewDocumentRef = useRef<HTMLDivElement>(null);
@@ -495,6 +516,21 @@ export function ResumeTool() {
     if (currentPage.length) nextPages.push(currentPage);
     setPages(nextPages.length ? nextPages : [[]]);
   }, [hasCanvas, resumeUnits]);
+
+  useEffect(() => {
+    function handleUndo(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "z") return;
+      const target = event.target as HTMLElement | null;
+      const isEditing = Boolean(target?.closest("input, textarea, [contenteditable='true']"));
+      if (isEditing || !pageBreakHistory.length) return;
+
+      event.preventDefault();
+      undoLastPageBreak();
+    }
+
+    window.addEventListener("keydown", handleUndo);
+    return () => window.removeEventListener("keydown", handleUndo);
+  }, [pageBreakHistory]);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -608,7 +644,19 @@ export function ResumeTool() {
   }
 
   function togglePageBreakBefore(unitId: string) {
-    setForcedPageBreakIds((ids) => (ids.includes(unitId) ? ids.filter((id) => id !== unitId) : [...ids, unitId]));
+    setForcedPageBreakIds((ids) => {
+      setPageBreakHistory((history) => [...history, ids].slice(-20));
+      return ids.includes(unitId) ? ids.filter((id) => id !== unitId) : [...ids, unitId];
+    });
+  }
+
+  function undoLastPageBreak() {
+    setPageBreakHistory((history) => {
+      const previousIds = history.at(-1);
+      if (!previousIds) return history;
+      setForcedPageBreakIds(previousIds);
+      return history.slice(0, -1);
+    });
   }
 
   function scrollToPreviewDocument() {
@@ -719,6 +767,9 @@ export function ResumeTool() {
                   <button type="button" className="ghost-button" onClick={scrollToPreviewDocument}>
                     Show first page
                   </button>
+                  <button type="button" className="ghost-button" onClick={undoLastPageBreak} disabled={!pageBreakHistory.length}>
+                    Undo last change
+                  </button>
                   <button type="button" className="primary-button" onClick={() => window.print()}>
                     Download PDF
                   </button>
@@ -820,7 +871,7 @@ function buildResumeUnits({
     }),
   });
 
-  if (data.summary) units.push({ id: "summary", kind: "paragraph", title: "Executive Summary OR Summary", text: data.summary });
+  if (data.summary) units.push({ id: "summary", kind: "paragraph", title: "Executive Summary", text: data.summary });
   highlights.forEach((item, index) =>
     units.push({ id: `highlight-${index}`, kind: "listItem", sectionTitle: "Career Highlights", title: index === 0 ? "Career Highlights" : undefined, text: item }),
   );
@@ -963,7 +1014,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("experience", index, "- New responsibility")}>Add line</button>
             <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
-              Next page
+              {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
             </button>
             <button type="button" onClick={() => removeListItem("experience", index)}>Remove</button>
           </div>
@@ -998,7 +1049,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem(field, index)}>Add line</button>
             <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
-              Next page
+              {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
             </button>
             <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
           </div>
@@ -1024,7 +1075,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
-              Next page
+              {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
             </button>
             <button type="button" onClick={() => updateField(field, "")}>Remove block</button>
           </div>
