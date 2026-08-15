@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AlignmentType, BorderStyle, Document, ImageRun, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from "docx";
 
 type ResumeData = {
   candidateName: string;
@@ -26,6 +27,14 @@ type ResumeUnit = {
   kind: "intro" | "paragraph" | "listItem" | "expertise" | "experienceItem";
   text?: string;
   items?: string[];
+};
+
+type EditableResumeProps = {
+  unit: ResumeUnit;
+  forceTitle?: string;
+  data: ResumeData;
+  isBlind: boolean;
+  setData: (data: ResumeData) => void;
 };
 
 const emptyResume: ResumeData = {
@@ -199,6 +208,151 @@ function toLines(value: string) {
     .split(/\r?\n|;/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function listToField(items: string[]) {
+  return items.map((item) => item.trim()).filter(Boolean).join("\n");
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function safeFilename(value: string) {
+  return (value || "TBBT Resume").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function docText(text: string, options: { bold?: boolean; color?: string; size?: number } = {}) {
+  return new TextRun({
+    text,
+    bold: options.bold,
+    color: options.color || "000000",
+    size: options.size || 18,
+    font: "Arial",
+  });
+}
+
+function docHeading(text: string) {
+  return new Paragraph({
+    spacing: { before: 180, after: 80 },
+    children: [docText(text, { bold: true, color: "6D1265", size: 20 })],
+  });
+}
+
+function docParagraph(text: string, bold = false) {
+  return new Paragraph({
+    spacing: { after: 70 },
+    children: [docText(text, { bold })],
+  });
+}
+
+function docBullet(text: string) {
+  return new Paragraph({
+    bullet: { level: 0 },
+    spacing: { after: 45 },
+    children: [docText(text)],
+  });
+}
+
+function buildWordDocument({
+  data,
+  isBlind,
+  contactDetails,
+  logoData,
+  expertise,
+  highlights,
+  experience,
+  achievements,
+  education,
+}: {
+  data: ResumeData;
+  isBlind: boolean;
+  contactDetails: string[];
+  logoData?: Uint8Array;
+  expertise: string[];
+  highlights: string[];
+  experience: string[];
+  achievements: string[];
+  education: string[];
+}) {
+  const children: Array<Paragraph | Table> = [
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: logoData
+        ? [new ImageRun({ data: logoData, type: "png", transformation: { width: 164, height: 32 } })]
+        : [docText("THE BLACKBOX TALENT", { bold: true, size: 22 })],
+    }),
+  ];
+
+  if (isBlind) {
+    if (data.title) children.push(docParagraph(data.title.toUpperCase(), true));
+  } else {
+    if (data.candidateName) children.push(docParagraph(data.candidateName.toUpperCase(), true));
+    if (data.title) children.push(docParagraph(data.title.toUpperCase(), true));
+    if (contactDetails.length) children.push(docParagraph(contactDetails.join(" | ")));
+  }
+
+  if (data.summary) {
+    children.push(docHeading("Executive Summary OR Summary"), docParagraph(data.summary));
+  }
+  if (highlights.length) {
+    children.push(docHeading("Career Highlights"), ...highlights.map(docBullet));
+  }
+  if (expertise.length) {
+    const rows = [];
+    for (let i = 0; i < expertise.length; i += 4) {
+      rows.push(
+        new TableRow({
+          children: expertise.slice(i, i + 4).map(
+            (skill) =>
+              new TableCell({
+                width: { size: 25, type: WidthType.PERCENTAGE },
+                borders: {
+                  top: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
+                  bottom: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
+                  left: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
+                  right: { style: BorderStyle.SINGLE, size: 1, color: "A7A7A7" },
+                },
+                children: [docParagraph(skill)],
+              }),
+          ),
+        }),
+      );
+    }
+    children.push(docHeading("Core Expertise"), new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows }));
+  }
+  if (experience.length) {
+    children.push(docHeading("Professional Experience"));
+    experience.forEach((item) => {
+      const isBullet = /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented|supervised|oversaw|prepared|monitored)\b/i.test(item);
+      const text = item.replace(/^[-*\u2022\s]+/, "").trim();
+      children.push(isBullet ? docBullet(text) : docParagraph(text, true));
+    });
+  }
+  if (achievements.length) children.push(docHeading("Achievements"), ...achievements.map(docBullet));
+  if (education.length) children.push(docHeading("Education / Certification / Qualifications"), ...education.map((item) => docParagraph(item)));
+  if (data.additionalSkills) children.push(docHeading("Technology / Additional Skills / Language"), docParagraph(data.additionalSkills));
+  if (data.alignment) children.push(docHeading("Alignment with the role applying"), docParagraph(data.alignment));
+
+  return new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: { top: 720, right: 900, bottom: 720, left: 900 },
+          },
+        },
+        children,
+      },
+    ],
+  });
 }
 
 function TextField({
@@ -427,6 +581,16 @@ export function ResumeTool() {
     setAiError("");
   }
 
+  async function handleDownloadWord() {
+    const logoData = await fetch("/tbbt-logo.png")
+      .then((response) => response.arrayBuffer())
+      .then((buffer) => new Uint8Array(buffer))
+      .catch(() => undefined);
+    const document = buildWordDocument({ data, isBlind, contactDetails, logoData, expertise, highlights, experience, achievements, education });
+    const blob = await Packer.toBlob(document);
+    downloadBlob(blob, `${safeFilename(isBlind ? data.title : data.candidateName)}.docx`);
+  }
+
   return (
     <section className="resume-tool" id="tools" aria-label="Resume formatter tool">
       <div className="tool-heading">
@@ -528,7 +692,10 @@ export function ResumeTool() {
                   <span>{isBlind ? "Blind candidate layout" : "Full candidate layout"}</span>
                 </div>
                 <button type="button" className="primary-button" onClick={() => window.print()}>
-                  Generate PDF
+                  Download PDF
+                </button>
+                <button type="button" className="ghost-button" onClick={handleDownloadWord}>
+                  Download Word
                 </button>
               </div>
 
@@ -567,8 +734,11 @@ export function ResumeTool() {
                     <ResumeHeader compact={index > 0} />
                     <div className="resume-page-body">
                       {pageUnits.map((unit) => (
-                        <ResumeUnitContent
+                        <EditableResumeUnitContent
+                          data={data}
                           forceTitle={!unit.title && unit.sectionTitle && pageUnits[0].id === unit.id ? `${unit.sectionTitle} Continued` : undefined}
+                          isBlind={isBlind}
+                          setData={setData}
                           unit={unit}
                           key={unit.id}
                         />
@@ -612,9 +782,9 @@ function buildResumeUnits({
     id: "intro",
     kind: "intro",
     text: JSON.stringify({
-      name: isBlind ? "Confidential Candidate Profile" : data.candidateName,
-      title: data.title,
-      contact: isBlind ? "Identity hidden for client review" : contactDetails.join(" | "),
+      name: isBlind ? data.title : data.candidateName,
+      title: isBlind ? "" : data.title,
+      contact: isBlind ? "" : contactDetails.join(" | "),
       photo: !isBlind ? photo : "",
     }),
   });
@@ -666,6 +836,171 @@ function ResumeFooter({ page }: { page: string }) {
       <strong>{page}</strong>
     </footer>
   );
+}
+
+function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData }: EditableResumeProps) {
+  function updateField(field: keyof ResumeData, value: string) {
+    setData({ ...data, [field]: value.trim() });
+  }
+
+  function updateListField(field: keyof ResumeData, items: string[]) {
+    setData({ ...data, [field]: listToField(items) });
+  }
+
+  function listForUnit(field: keyof ResumeData) {
+    return field === "expertise" ? toList(data[field], true) : field === "experience" ? toLines(data[field]) : toList(data[field]);
+  }
+
+  function updateListItem(field: keyof ResumeData, index: number, value: string) {
+    const items = listForUnit(field);
+    items[index] = value.trim();
+    updateListField(field, items);
+  }
+
+  function addListItem(field: keyof ResumeData, index: number, value = "New item") {
+    const items = listForUnit(field);
+    items.splice(index + 1, 0, value);
+    updateListField(field, items);
+  }
+
+  function removeListItem(field: keyof ResumeData, index: number) {
+    updateListField(
+      field,
+      listForUnit(field).filter((_, itemIndex) => itemIndex !== index),
+    );
+  }
+
+  if (unit.kind === "intro") {
+    const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
+    return (
+      <section className="candidate-intro editable-resume-block">
+        <div>
+          {intro.name ? (
+            <h3
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(event) => updateField(isBlind ? "title" : "candidateName", event.currentTarget.innerText)}
+            >
+              {intro.name}
+            </h3>
+          ) : null}
+          {intro.title ? (
+            <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField("title", event.currentTarget.innerText)}>
+              {intro.title}
+            </p>
+          ) : null}
+          {intro.contact ? <p className="contact-line">{intro.contact}</p> : null}
+        </div>
+        {intro.photo ? (
+          <div className="photo-frame">
+            <img className="candidate-photo" src={intro.photo} alt="Candidate" />
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
+  if (unit.kind === "expertise") {
+    const items = toList(data.expertise, true).slice(0, 8);
+    return (
+      <ResumeSection title={unit.title || "Core Expertise"}>
+        <div className="editable-resume-block">
+          <div className="resume-edit-actions no-print">
+            <button type="button" onClick={() => addListItem("expertise", items.length - 1, "New skill")}>Add skill</button>
+            <button type="button" onClick={() => updateField("expertise", "")}>Remove block</button>
+          </div>
+          <div className="expertise-grid">
+            {items.map((skill, index) => (
+              <span
+                contentEditable
+                suppressContentEditableWarning
+                key={`${skill}-${index}`}
+                onBlur={(event) => updateListItem("expertise", index, event.currentTarget.innerText)}
+                onKeyDown={(event) => {
+                  if (event.key === "Backspace" && event.currentTarget.innerText.trim() === "") removeListItem("expertise", index);
+                }}
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      </ResumeSection>
+    );
+  }
+
+  if (unit.kind === "experienceItem") {
+    const index = Number(unit.id.replace("experience-", ""));
+    const items = toLines(data.experience);
+    const item = items[index] || unit.text || "";
+    const isBullet = /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented|supervised|oversaw|prepared|monitored)\b/i.test(item);
+    const text = item.replace(/^[-*\u2022\s]+/, "").trim();
+
+    return (
+      <ResumeSection title={forceTitle || unit.title}>
+        <div className="editable-resume-block">
+          <div className="resume-edit-actions no-print">
+            <button type="button" onClick={() => addListItem("experience", index, "- New responsibility")}>Add line</button>
+            <button type="button" onClick={() => removeListItem("experience", index)}>Remove</button>
+          </div>
+          <div className="experience-list">
+            <p
+              className={isBullet ? "experience-bullet" : "experience-meta"}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(event) => updateListItem("experience", index, isBullet ? `- ${event.currentTarget.innerText}` : event.currentTarget.innerText)}
+            >
+              {text}
+            </p>
+          </div>
+        </div>
+      </ResumeSection>
+    );
+  }
+
+  if (unit.kind === "listItem") {
+    const field = unit.id.startsWith("highlight-")
+      ? "highlights"
+      : unit.id.startsWith("achievement-")
+        ? "achievements"
+        : "education";
+    const index = Number(unit.id.split("-").at(-1));
+    const items = listForUnit(field);
+    const value = items[index] || unit.text || "";
+
+    return (
+      <ResumeSection title={forceTitle || unit.title}>
+        <div className="editable-resume-block">
+          <div className="resume-edit-actions no-print">
+            <button type="button" onClick={() => addListItem(field, index)}>Add line</button>
+            <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
+          </div>
+          <BulletList
+            items={[value]}
+            onBlur={(nextValue) => updateListItem(field, index, nextValue)}
+          />
+        </div>
+      </ResumeSection>
+    );
+  }
+
+  const field = unit.id === "summary" ? "summary" : unit.id === "additional-skills" ? "additionalSkills" : unit.id === "alignment" ? "alignment" : null;
+  if (field) {
+    return (
+      <ResumeSection title={forceTitle || unit.title}>
+        <div className="editable-resume-block">
+          <div className="resume-edit-actions no-print">
+            <button type="button" onClick={() => updateField(field, "")}>Remove block</button>
+          </div>
+          <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField(field, event.currentTarget.innerText)}>
+            {data[field]}
+          </p>
+        </div>
+      </ResumeSection>
+    );
+  }
+
+  return <ResumeUnitContent unit={unit} forceTitle={forceTitle} />;
 }
 
 function ResumeUnitContent({ unit, forceTitle }: { unit: ResumeUnit; forceTitle?: string }) {
@@ -731,11 +1066,18 @@ function ResumeSection({ title, children }: { title?: string; children: ReactNod
   );
 }
 
-function BulletList({ items }: { items: string[] }) {
+function BulletList({ items, onBlur }: { items: string[]; onBlur?: (value: string) => void }) {
   return (
     <ul>
       {items.map((item) => (
-        <li key={item}>{item}</li>
+        <li
+          contentEditable={Boolean(onBlur)}
+          suppressContentEditableWarning
+          key={item}
+          onBlur={onBlur ? (event) => onBlur(event.currentTarget.innerText) : undefined}
+        >
+          {item}
+        </li>
       ))}
     </ul>
   );

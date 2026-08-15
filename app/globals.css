@@ -705,6 +705,51 @@ a {
   margin-top: 2px;
 }
 
+.editable-resume-block {
+  position: relative;
+}
+
+.editable-resume-block [contenteditable="true"] {
+  border-radius: 3px;
+  outline: 0;
+  cursor: text;
+}
+
+.editable-resume-block [contenteditable="true"]:focus {
+  box-shadow: 0 0 0 1px rgba(140, 48, 229, 0.38), 0 0 0 4px rgba(140, 48, 229, 0.08);
+  background: rgba(255, 255, 210, 0.28);
+}
+
+.resume-edit-actions {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.editable-resume-block:hover .resume-edit-actions,
+.editable-resume-block:focus-within .resume-edit-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.resume-edit-actions button {
+  min-height: 16px;
+  border: 1px solid #e2ccff;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #7c2ee6;
+  font-size: 7px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 3px 7px;
+}
+
 .expertise-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -921,6 +966,10 @@ a {
   .resume-document {
     display: block;
     zoom: 1 !important;
+  }
+
+  .no-print {
+    display: none !important;
   }
 
   .measure-page,
