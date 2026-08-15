@@ -1021,8 +1021,11 @@ a {
     margin: 0;
   }
 
+  html,
   body {
     background: #ffffff;
+    height: auto;
+    overflow: visible !important;
   }
 
   .hero-shell,
@@ -1040,6 +1043,8 @@ a {
     border: 0;
     box-shadow: none;
     background: #ffffff;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .tool-workspace {
@@ -1049,6 +1054,9 @@ a {
   .resume-document {
     display: block;
     --preview-scale: 1 !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   .no-print {
@@ -1076,6 +1084,8 @@ a {
   .resume-page-frame {
     width: 210mm;
     height: 297mm;
+    display: block;
+    overflow: visible;
   }
 
   .resume-page-frame .resume-page {

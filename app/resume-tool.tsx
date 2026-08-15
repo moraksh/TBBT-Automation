@@ -495,11 +495,23 @@ export function ResumeTool() {
       return Math.ceil(node?.getBoundingClientRect().height || 0) + 2;
     }
 
-    resumeUnits.forEach((unit) => {
+    resumeUnits.forEach((unit, unitIndex) => {
       const currentPageIndex = nextPages.length;
       const measuredHeight = unitHeight(unit, currentPage.length === 0);
       const limit = pageLimit(currentPageIndex);
-      const shouldStartNewPage = currentPage.length > 0 && (unit.forcePageBreakBefore || currentHeight + measuredHeight > limit);
+      let requiredHeight = measuredHeight;
+
+      if (unit.kind === "experienceItem" && isCompanyExperienceLine(unit.text || "")) {
+        const keepWithUnits: ResumeUnit[] = [];
+        for (const nextUnit of resumeUnits.slice(unitIndex + 1)) {
+          if (nextUnit.kind !== "experienceItem" || isCompanyExperienceLine(nextUnit.text || "")) break;
+          keepWithUnits.push(nextUnit);
+          if (keepWithUnits.length === 2) break;
+        }
+        requiredHeight += keepWithUnits.reduce((height, nextUnit) => height + unitHeight(nextUnit, false), 0);
+      }
+
+      const shouldStartNewPage = currentPage.length > 0 && (unit.forcePageBreakBefore || currentHeight + requiredHeight > limit);
 
       if (shouldStartNewPage) {
         nextPages.push(currentPage);
@@ -958,11 +970,13 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     );
   }
 
-  const nextPageAction = unit.title ? (
+  const pageBreakAction = (
     <button type="button" className={unit.forcePageBreakBefore ? "active" : ""} onClick={() => togglePageBreakBefore(unit.id)}>
       {unit.forcePageBreakBefore ? "Undo next page" : "Next page"}
     </button>
-  ) : null;
+  );
+  const headingPageBreakAction = unit.title ? pageBreakAction : null;
+  const inlinePageBreakAction = unit.title ? null : pageBreakAction;
 
   if (unit.kind === "intro") {
     const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
@@ -994,7 +1008,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
   if (unit.kind === "expertise") {
     const items = toList(data.expertise, true).slice(0, 9);
     return (
-      <ResumeSection title={unit.title || "Core Expertise"} actions={nextPageAction}>
+      <ResumeSection title={unit.title || "Core Expertise"} actions={headingPageBreakAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("expertise", items.length - 1, "New skill")}>Add skill</button>
@@ -1030,10 +1044,11 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     const displayText = isBlind && isCompanyLine ? text.replace(/^([^|]+)/, "Confidential") : text;
 
     return (
-      <ResumeSection title={forceTitle || unit.title} actions={nextPageAction}>
+      <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem("experience", index, "- New responsibility")}>Add line</button>
+            {inlinePageBreakAction}
             <button type="button" onClick={() => removeListItem("experience", index)}>Remove</button>
           </div>
           <div className="experience-list">
@@ -1062,10 +1077,11 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     const value = items[index] || unit.text || "";
 
     return (
-      <ResumeSection title={forceTitle || unit.title} actions={nextPageAction}>
+      <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
             <button type="button" onClick={() => addListItem(field, index)}>Add line</button>
+            {inlinePageBreakAction}
             <button type="button" onClick={() => removeListItem(field, index)}>Remove</button>
           </div>
           {field === "highlights" || field === "achievements" || field === "education" ? (
@@ -1086,9 +1102,10 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
   const field = unit.id === "summary" ? "summary" : unit.id === "additional-skills" ? "additionalSkills" : unit.id === "alignment" ? "alignment" : null;
   if (field) {
     return (
-      <ResumeSection title={forceTitle || unit.title} actions={nextPageAction}>
+      <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
         <div className="editable-resume-block">
           <div className="resume-edit-actions no-print">
+            {inlinePageBreakAction}
             <button type="button" onClick={() => updateField(field, "")}>Remove block</button>
           </div>
           <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField(field, event.currentTarget.innerText)}>
