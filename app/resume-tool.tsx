@@ -506,7 +506,7 @@ export function ResumeTool() {
         for (const nextUnit of resumeUnits.slice(unitIndex + 1)) {
           if (nextUnit.kind !== "experienceItem" || isCompanyExperienceLine(nextUnit.text || "")) break;
           keepWithUnits.push(nextUnit);
-          if (keepWithUnits.length === 2) break;
+          if (keepWithUnits.length === 1) break;
         }
         requiredHeight += keepWithUnits.reduce((height, nextUnit) => height + unitHeight(nextUnit, false), 0);
       }
