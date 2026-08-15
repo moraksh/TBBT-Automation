@@ -338,7 +338,7 @@ a {
 
 .tool-workspace {
   display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(640px, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(794px, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -363,6 +363,7 @@ a {
   padding: 16px;
   overflow: visible;
   background: #ede8f2;
+  min-height: auto;
 }
 
 .field {
@@ -535,6 +536,14 @@ a {
   margin-bottom: 16px;
 }
 
+.preview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .preview-toolbar strong,
 .preview-toolbar span {
   display: block;
@@ -573,11 +582,14 @@ a {
 }
 
 .resume-document {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
-  align-items: start;
-  justify-items: center;
+  align-items: center;
+  justify-content: flex-start;
   padding-top: 0;
+  min-height: 1123px;
+  scroll-margin-top: 12px;
 }
 
 .measure-page,

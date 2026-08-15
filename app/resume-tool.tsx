@@ -406,6 +406,7 @@ export function ResumeTool() {
   const [forcedPageBreakIds, setForcedPageBreakIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
+  const previewDocumentRef = useRef<HTMLDivElement>(null);
 
   const isBlind = layout === "blind";
   const expertise = useMemo(() => toList(data.expertise, true), [data.expertise]);
@@ -608,6 +609,10 @@ export function ResumeTool() {
     setForcedPageBreakIds((ids) => (ids.includes(unitId) ? ids.filter((id) => id !== unitId) : [...ids, unitId]));
   }
 
+  function scrollToPreviewDocument() {
+    previewDocumentRef.current?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  }
+
   return (
     <section className="resume-tool" id="tools" aria-label="Resume formatter tool">
       <div className="tool-heading">
@@ -708,17 +713,23 @@ export function ResumeTool() {
                   <strong>Proofing canvas</strong>
                   <span>{isBlind ? "Blind candidate layout" : "Full candidate layout"}</span>
                 </div>
-                <button type="button" className="primary-button" onClick={() => window.print()}>
-                  Download PDF
-                </button>
-                <button type="button" className="ghost-button" onClick={handleDownloadWord}>
-                  Download Word
-                </button>
+                <div className="preview-actions">
+                  <button type="button" className="ghost-button" onClick={scrollToPreviewDocument}>
+                    Show first page
+                  </button>
+                  <button type="button" className="primary-button" onClick={() => window.print()}>
+                    Download PDF
+                  </button>
+                  <button type="button" className="ghost-button" onClick={handleDownloadWord}>
+                    Download Word
+                  </button>
+                </div>
               </div>
 
               <div
                 className="resume-document"
                 aria-label="Resume preview"
+                ref={previewDocumentRef}
                 style={{ zoom: mobilePreviewScale } as CSSProperties}
               >
                 <div className="measure-page" ref={measureRef} aria-hidden="true">
