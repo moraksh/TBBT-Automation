@@ -454,6 +454,7 @@ export function ResumeTool() {
   const measureRef = useRef<HTMLDivElement>(null);
   const firstPageBodyRef = useRef<HTMLDivElement>(null);
   const laterPageBodyRef = useRef<HTMLDivElement>(null);
+  const renderedPageBodyRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [pages, setPages] = useState<ResumeUnit[][]>([]);
 
   useEffect(() => {
@@ -536,6 +537,62 @@ export function ResumeTool() {
     if (currentPage.length) nextPages.push(currentPage);
     setPages(nextPages.length ? nextPages : [[]]);
   }, [hasCanvas, resumeUnits]);
+
+  useLayoutEffect(() => {
+    if (!hasCanvas || pages.length < 2 || !measureRef.current) return;
+
+    const measuredNodes = new Map(
+      Array.from(measureRef.current.querySelectorAll<HTMLElement>("[data-measure-unit]")).map((node) => [
+        node.dataset.measureUnit || "",
+        node,
+      ]),
+    );
+    const nextPages = pages.map((page) => [...page]);
+    let changed = false;
+
+    function measuredNormalHeight(unit: ResumeUnit) {
+      return Math.ceil(measuredNodes.get(unit.id)?.getBoundingClientRect().height || 0) + 1;
+    }
+
+    function requiredPullHeight(unit: ResumeUnit, sourcePage: ResumeUnit[]) {
+      let height = measuredNormalHeight(unit);
+
+      if (unit.kind === "experienceItem" && isCompanyExperienceLine(unit.text || "")) {
+        const nextUnit = sourcePage[1];
+        if (nextUnit?.kind === "experienceItem" && !isCompanyExperienceLine(nextUnit.text || "")) {
+          height += measuredNormalHeight(nextUnit);
+        }
+      }
+
+      return height;
+    }
+
+    for (let pageIndex = 0; pageIndex < nextPages.length - 1; pageIndex += 1) {
+      const body = renderedPageBodyRefs.current[pageIndex];
+      const limit = Math.floor(body?.clientHeight || 0);
+      if (!body || !limit) continue;
+
+      let usedHeight = Math.ceil(body.scrollHeight);
+      const targetPage = nextPages[pageIndex];
+      const sourcePage = nextPages[pageIndex + 1];
+
+      while (sourcePage.length) {
+        const candidate = sourcePage[0];
+        if (candidate.forcePageBreakBefore) break;
+
+        const candidateHeight = measuredNormalHeight(candidate);
+        const candidateRequiredHeight = requiredPullHeight(candidate, sourcePage);
+        if (usedHeight + candidateRequiredHeight > limit) break;
+
+        targetPage.push(candidate);
+        sourcePage.shift();
+        usedHeight += candidateHeight;
+        changed = true;
+      }
+    }
+
+    if (changed) setPages(nextPages.filter((page) => page.length));
+  }, [hasCanvas, pages]);
 
   useEffect(() => {
     function handleUndo(event: KeyboardEvent) {
@@ -847,7 +904,12 @@ export function ResumeTool() {
                   <div className="resume-page-frame" key={`page-${index}`}>
                     <article className="resume-page" aria-label={`Resume preview page ${index + 1}`}>
                       {index === 0 ? <ResumeHeader /> : null}
-                      <div className="resume-page-body">
+                      <div
+                        className="resume-page-body"
+                        ref={(node) => {
+                          renderedPageBodyRefs.current[index] = node;
+                        }}
+                      >
                         {pageUnits.map((unit) => (
                           <EditableResumeUnitContent
                             data={data}
