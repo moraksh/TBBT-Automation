@@ -435,8 +435,8 @@ export function ResumeTool() {
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
   const contactDetails = useMemo(
-    () => [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean),
-    [data.email, data.linkedin, data.location, data.phone],
+    () => (isBlind ? [] : [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean)),
+    [data.email, data.linkedin, data.location, data.phone, isBlind],
   );
   const resumeUnits = useMemo(
     () => buildResumeUnits({ data, isBlind, contactDetails, photo, expertise, highlights, experience, achievements, education, forcedPageBreakIds }),
@@ -663,6 +663,13 @@ export function ResumeTool() {
     });
   }
 
+  function clearPageBreaks() {
+    setForcedPageBreakIds((ids) => {
+      if (ids.length) setPageBreakHistory((history) => [...history, ids].slice(-20));
+      return [];
+    });
+  }
+
   function scrollToPreviewDocument() {
     previewDocumentRef.current?.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     previewDocumentRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
@@ -774,6 +781,9 @@ export function ResumeTool() {
                   </button>
                   <button type="button" className="ghost-button" onClick={undoLastPageBreak} disabled={!pageBreakHistory.length}>
                     Undo last change
+                  </button>
+                  <button type="button" className="ghost-button" onClick={clearPageBreaks} disabled={!forcedPageBreakIds.length}>
+                    Clear page breaks
                   </button>
                   <button type="button" className="primary-button" onClick={() => window.print()}>
                     Download PDF
