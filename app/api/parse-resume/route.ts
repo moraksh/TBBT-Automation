@@ -144,9 +144,17 @@ function normalizeResumeData(value: unknown): ResumeData {
       .replace(/\s*[\u2022•]\s*/g, "\n- ")
       .replace(/([.!?])(?=[A-Z])/g, "$1 ")
       .replace(/\s+([,.;:])/g, "$1")
-      .replace(/([,.;:])(?=\S)/g, "$1 ")
+      .replace(/([,;:])(?=\S)/g, "$1 ")
       .replace(/[ \t]{2,}/g, " ")
       .replace(/\n{3,}/g, "\n\n")
+      .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+)\.\s+([A-Z]{2,})/gi, "$1.$2")
+      .replace(/\bwww\.\s+/gi, "www.")
+      .replace(/\bwww\.\s*linkedin\.\s*com/gi, "www.linkedin.com")
+      .replace(/\blinkedin\.\s*com/gi, "linkedin.com")
+      .replace(/\b(https?:\/\/)\s+/gi, "$1")
+      .replace(/((?:https?:\/\/)?(?:www\.)?linkedin\.com\/(?:in|pub|company)\/[A-Za-z0-9._%+-]+(?:\s+[a-z0-9][A-Za-z0-9._%+-]*)*)/g, (url) =>
+        url.replace(/\s+/g, "-"),
+      )
       .trim();
   }
 

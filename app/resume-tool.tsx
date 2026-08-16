@@ -129,15 +129,17 @@ function normalizeContactSpacing(value: string) {
 }
 
 function normalizeResumeText(value: string) {
-  return normalizeContactSpacing(decodeHtmlEntities(value))
+  return normalizeContactSpacing(
+    decodeHtmlEntities(value)
     .replace(/\u00a0/g, " ")
     .replace(/\s*[\u2022•]\s*/g, "\n- ")
     .replace(/([.!?])(?=[A-Z])/g, "$1 ")
     .replace(/\s+([,.;:])/g, "$1")
-    .replace(/([,.;:])(?=\S)/g, "$1 ")
+    .replace(/([,;:])(?=\S)/g, "$1 ")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
-    .trim();
+    .trim(),
+  );
 }
 
 function escapeRegExp(value: string) {
