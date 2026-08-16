@@ -345,7 +345,7 @@ function toList(value: string, splitCommas = false) {
   const splitter = splitCommas ? /\r?\n|;|,|\s\|\s/ : /\r?\n|;/;
   return normalizeResumeText(value)
     .split(splitter)
-    .map((line) => cleanResumeLine(line).replace(/^[-*\u2022\d.)\s]+/, "").trim())
+    .map((line) => cleanResumeLine(line).replace(/^(?:[-*\u2022]\s*|\d+[.)]\s+)/, "").trim())
     .filter(Boolean);
 }
 
