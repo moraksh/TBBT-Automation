@@ -200,6 +200,7 @@ Rules:
 - Put information under the best matching field.
 - Lightly reformat for a professional resume: clean labels, consistent dates, corrected spacing/capitalization, and remove duplicated headings.
 - Preserve every meaningful factual detail from the candidate source. Do not drop named industries, countries, regions, certifications, regulatory frameworks, tools, technologies, leadership scope, years of experience, or explicit competencies.
+- Preserve numeric expressions exactly as written in the source, including plus signs, ordinals, percentages, date ranges, and phone prefixes. For example, keep "7+ years" as "7+ years", "200+" as "200+", "12th" as "12th", and "+971" as "+971"; do not rewrite them as "over 7", "more than 200", or remove the plus sign.
 - If the source has an Executive Profile, keep its full substance across summary and highlights. Summary may be 1 to 2 strong paragraphs when needed; do not compress it so much that facts disappear.
 - If a field is missing, return an empty string.
 - Do not return paragraphs copied as-is from the candidate source, but keep all facts while rewriting lightly.
