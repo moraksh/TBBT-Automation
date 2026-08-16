@@ -877,12 +877,16 @@ a {
 }
 
 .experience-meta {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .experience-company {
   margin-top: 14px !important;
   letter-spacing: 0;
+}
+
+.experience-lead {
+  font-weight: 700;
 }
 
 .resume-section-heading + .editable-resume-block .experience-company,

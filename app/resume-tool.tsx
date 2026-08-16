@@ -342,6 +342,38 @@ function isCompanyExperienceLine(item: string) {
   return /\b(present|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{4})\b/i.test(text) || text === text.toUpperCase();
 }
 
+function splitExperienceLead(item: string) {
+  const text = item.replace(/^[-*\u2022\s]+/, "").trim();
+  const pipeIndex = text.indexOf("|");
+  if (pipeIndex >= 0) {
+    return {
+      lead: text.slice(0, pipeIndex).trim(),
+      rest: text.slice(pipeIndex).trim(),
+    };
+  }
+
+  return { lead: text, rest: "" };
+}
+
+function formatExperienceLead(item: string, isBlind: boolean) {
+  const { lead, rest } = splitExperienceLead(item);
+  return {
+    lead: isBlind ? "Confidential" : lead,
+    rest,
+  };
+}
+
+function docExperienceLine(text: string, isBlind: boolean, spacing: { before?: number; after?: number; line?: number } = {}) {
+  const { lead, rest } = formatExperienceLead(text, isBlind);
+  return new Paragraph({
+    spacing: { after: spacing.after ?? 55, before: spacing.before, line: spacing.line ?? 260 },
+    children: [
+      docText(lead, { bold: true }),
+      ...(rest ? [docText(` ${rest}`)] : []),
+    ],
+  });
+}
+
 function buildWordDocument({
   data,
   isBlind,
@@ -419,14 +451,16 @@ function buildWordDocument({
       const isBullet = isExperienceBullet(item);
       const text = item.replace(/^[-*\u2022\s]+/, "").trim();
       const isCompanyLine = isCompanyExperienceLine(text);
-      const companyLine = isBlind && isCompanyLine ? text.replace(/^([^|]+)/, "Confidential") : text;
-
       if (isBullet) {
         children.push(docBullet(text));
         return;
       }
 
-      children.push(docParagraph(companyLine, true, { before: isCompanyLine && companyCount > 0 ? 180 : 0, after: 55 }));
+      children.push(
+        isCompanyLine
+          ? docExperienceLine(text, isBlind, { before: companyCount > 0 ? 180 : 0, after: 55 })
+          : docParagraph(text, false, { after: 55 }),
+      );
       if (isCompanyLine) companyCount += 1;
     });
   }
@@ -1202,7 +1236,6 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     const isBullet = isExperienceBullet(item);
     const isCompanyLine = isCompanyExperienceLine(item);
     const text = item.replace(/^[-*\u2022\s]+/, "").trim();
-    const displayText = isBlind && isCompanyLine ? text.replace(/^([^|]+)/, "Confidential") : text;
 
     return (
       <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
@@ -1219,7 +1252,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
               suppressContentEditableWarning
               onBlur={(event) => updateListItem("experience", index, isBullet ? `- ${event.currentTarget.innerText}` : event.currentTarget.innerText)}
             >
-              {displayText}
+              {isCompanyLine ? <ExperienceLineText text={text} isBlind={isBlind} /> : text}
             </p>
           </div>
         </div>
@@ -1377,9 +1410,21 @@ function ExperienceList({ items }: { items: string[] }) {
         return isBullet ? (
           <p className="experience-bullet" key={item}>{text}</p>
         ) : (
-          <p className={isCompanyLine ? "experience-meta experience-company" : "experience-meta experience-role"} key={item}>{text}</p>
+          <p className={isCompanyLine ? "experience-meta experience-company" : "experience-meta experience-role"} key={item}>
+            {isCompanyLine ? <ExperienceLineText text={text} isBlind={text.startsWith("Confidential")} /> : text}
+          </p>
         );
       })}
     </div>
+  );
+}
+
+function ExperienceLineText({ text, isBlind }: { text: string; isBlind: boolean }) {
+  const { lead, rest } = formatExperienceLead(text, isBlind);
+  return (
+    <>
+      <strong className="experience-lead">{lead}</strong>
+      {rest ? <span> {rest}</span> : null}
+    </>
   );
 }
