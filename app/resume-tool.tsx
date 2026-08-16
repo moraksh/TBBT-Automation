@@ -116,8 +116,17 @@ function decodeHtmlEntities(value: string) {
     .replace(/&gt;/gi, ">");
 }
 
+function normalizeContactSpacing(value: string) {
+  return value
+    .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+)\.\s+([A-Z]{2,})/gi, "$1.$2")
+    .replace(/\bwww\.\s+/gi, "www.")
+    .replace(/\bwww\.\s*linkedin\.\s*com/gi, "www.linkedin.com")
+    .replace(/\blinkedin\.\s*com/gi, "linkedin.com")
+    .replace(/\b(https?:\/\/)\s+/gi, "$1");
+}
+
 function normalizeResumeText(value: string) {
-  return decodeHtmlEntities(value)
+  return normalizeContactSpacing(decodeHtmlEntities(value))
     .replace(/\u00a0/g, " ")
     .replace(/\s*[\u2022•]\s*/g, "\n- ")
     .replace(/([.!?])(?=[A-Z])/g, "$1 ")
@@ -126,6 +135,62 @@ function normalizeResumeText(value: string) {
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function scrubBlindText(value: string, data: ResumeData) {
+  let safeText = normalizeResumeText(value);
+  const privateValues = [data.email, data.linkedin, data.phone].filter(Boolean);
+
+  if (data.candidateName) {
+    safeText = safeText.replace(new RegExp(`\\b${escapeRegExp(data.candidateName)}\\b`, "gi"), "The candidate");
+  }
+
+  privateValues.forEach((privateValue) => {
+    safeText = safeText.replace(new RegExp(escapeRegExp(privateValue), "gi"), "");
+  });
+
+  return safeText
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "")
+    .replace(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[^\s|,]+/gi, "")
+    .replace(/\s+\|/g, "")
+    .replace(/\|\s+/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([,.;:])/g, "$1")
+    .trim();
+}
+
+function parseContactLine(value: string, currentData: ResumeData): Partial<ResumeData> {
+  const normalized = normalizeResumeText(value);
+  const parts = normalized
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const next: Partial<ResumeData> = {};
+
+  const email = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  const linkedin = normalized.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[^\s|,]+/i)?.[0] || "";
+  const phone = normalized.match(/(?:M\s*:\s*)?(\+?\d[\d\s().-]{6,}\d)/i)?.[1]?.trim() || "";
+
+  if (email) next.email = email;
+  if (linkedin) next.linkedin = linkedin;
+  if (phone) next.phone = phone;
+
+  const location = parts.find(
+    (part) =>
+      !part.includes("@") &&
+      !/linkedin\.com/i.test(part) &&
+      !/^M\s*:/i.test(part) &&
+      part !== phone &&
+      part !== currentData.email &&
+      part !== currentData.linkedin,
+  );
+  if (location) next.location = location;
+
+  return next;
 }
 
 function cleanResumeLine(value: string) {
@@ -473,7 +538,7 @@ function buildWordDocument({
   if (achievements.length) children.push(docHeading("Achievements"), ...achievements.map(docBullet));
   if (education.length) children.push(docHeading("Education / Certification / Qualifications"), ...education.map((item) => docParagraph(item)));
   if (data.additionalSkills) children.push(docHeading("Technology / Additional Skills / Language"), docParagraph(data.additionalSkills));
-  if (data.alignment) children.push(docHeading("Alignment with the role"), docParagraph(data.alignment));
+  if (data.alignment) children.push(docHeading("Alignment with the role"), docParagraph(isBlind ? scrubBlindText(data.alignment, data) : data.alignment));
 
   return new Document({
     numbering: {
@@ -531,7 +596,17 @@ export function ResumeTool() {
   const achievements = useMemo(() => toList(data.achievements), [data.achievements]);
   const education = useMemo(() => toList(data.education), [data.education]);
   const contactDetails = useMemo(
-    () => (isBlind ? [] : [data.location, data.phone ? `M: ${data.phone}` : "", data.email ? `Email: ${data.email}` : "", data.linkedin].filter(Boolean)),
+    () =>
+      isBlind
+        ? []
+        : [
+            data.location,
+            data.phone ? `M: ${data.phone}` : "",
+            data.email ? `Email: ${data.email}` : "",
+            data.linkedin,
+          ]
+            .map((item) => normalizeResumeText(item))
+            .filter(Boolean),
     [data.email, data.linkedin, data.location, data.phone, isBlind],
   );
   const resumeUnits = useMemo(
@@ -1037,7 +1112,14 @@ function buildResumeUnits({
     }),
   );
   if (data.additionalSkills) units.push({ id: "additional-skills", kind: "paragraph", title: "Technology / Additional Skills / Language", text: data.additionalSkills });
-  if (data.alignment) units.push({ id: "alignment", kind: "paragraph", title: "Alignment with the role", text: data.alignment });
+  if (data.alignment) {
+    units.push({
+      id: "alignment",
+      kind: "paragraph",
+      title: "Alignment with the role",
+      text: isBlind ? scrubBlindText(data.alignment, data) : data.alignment,
+    });
+  }
 
   return units.map((unit) => ({ ...unit, forcePageBreakBefore: forcedPageBreakIds.includes(unit.id) }));
 }
@@ -1123,7 +1205,21 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
               {intro.title}
             </p>
           ) : null}
-          {intro.contact ? <p className="contact-line">{intro.contact}</p> : null}
+          {intro.contact ? (
+            <p
+              className="contact-line"
+              contentEditable={!isBlind}
+              suppressContentEditableWarning
+              onBlur={(event) => {
+                if (!isBlind) {
+                  const parsedContact = parseContactLine(event.currentTarget.innerText, data);
+                  setData((currentData) => ({ ...currentData, ...parsedContact }));
+                }
+              }}
+            >
+              {intro.contact}
+            </p>
+          ) : null}
         </div>
         {intro.photo ? (
           <div className="photo-frame">
@@ -1229,6 +1325,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
 
   const field = unit.id === "summary" ? "summary" : unit.id === "additional-skills" ? "additionalSkills" : unit.id === "alignment" ? "alignment" : null;
   if (field) {
+    const displayText = field === "alignment" && isBlind ? scrubBlindText(data[field], data) : data[field];
     return (
       <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
         <div className="editable-resume-block">
@@ -1237,7 +1334,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
             <button type="button" onMouseDown={preventEditBlur} onClick={() => removeBlock(field)}>Remove block</button>
           </div>
           <p contentEditable suppressContentEditableWarning onBlur={(event) => updateField(field, event.currentTarget.innerText)}>
-            {data[field]}
+            {displayText}
           </p>
         </div>
       </ResumeSection>

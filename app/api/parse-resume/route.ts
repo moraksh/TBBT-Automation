@@ -132,6 +132,11 @@ function normalizeResumeData(value: unknown): ResumeData {
       .replace(/&#39;|&apos;/gi, "'")
       .replace(/&lt;/gi, "<")
       .replace(/&gt;/gi, ">")
+      .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+)\.\s+([A-Z]{2,})/gi, "$1.$2")
+      .replace(/\bwww\.\s+/gi, "www.")
+      .replace(/\bwww\.\s*linkedin\.\s*com/gi, "www.linkedin.com")
+      .replace(/\blinkedin\.\s*com/gi, "linkedin.com")
+      .replace(/\b(https?:\/\/)\s+/gi, "$1")
       .replace(/\u00a0/g, " ")
       .replace(/\s*[\u2022•]\s*/g, "\n- ")
       .replace(/([.!?])(?=[A-Z])/g, "$1 ")
@@ -207,6 +212,7 @@ Rules:
   - If a job description is provided, write only 1-2 short lines explaining why the candidate fits that role.
   - Use only facts present in the candidate information.
   - Use the job description only to identify matching requirements.
+  - Do not include the candidate name, email, phone number, LinkedIn URL, or other personal contact details.
   - Do not invent experience, skills, tools, industries, locations, certifications, or achievements.
   - Keep it short, crisp, client-ready, and specific.
 - Do not paste the full raw text as one block.
