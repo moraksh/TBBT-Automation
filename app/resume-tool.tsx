@@ -537,6 +537,7 @@ export function ResumeTool() {
   const [isMobileProofingOpen, setIsMobileProofingOpen] = useState(false);
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
   const [isExtractingCv, setIsExtractingCv] = useState(false);
+  const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
   const [forcedPageBreakIds, setForcedPageBreakIds] = useState<string[]>([]);
   const [pageBreakHistory, setPageBreakHistory] = useState<string[][]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -745,6 +746,7 @@ export function ResumeTool() {
 
     setAiError("");
     setIsExtractingCv(true);
+    setUploadedCvFile(file);
 
     try {
       const formData = new FormData();
@@ -786,18 +788,37 @@ export function ResumeTool() {
   async function handleAiParse() {
     setAiError("");
 
-    if (!rawText.trim()) {
+    if (!rawText.trim() && !uploadedCvFile) {
       setAiError("Paste candidate information before using AI auto-fill.");
       return;
     }
 
     setIsAiParsing(true);
     try {
-      const response = await fetch("/api/parse-resume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: rawText }),
-      });
+      const shouldSendFile =
+        uploadedCvFile &&
+        (
+          uploadedCvFile.type === "application/pdf" ||
+          uploadedCvFile.type.startsWith("image/") ||
+          /\.(pdf|jpg|jpeg|png|webp)$/i.test(uploadedCvFile.name)
+        );
+      let response: Response;
+
+      if (shouldSendFile) {
+        const formData = new FormData();
+        formData.append("file", uploadedCvFile);
+        formData.append("text", rawText);
+        response = await fetch("/api/parse-resume", {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        response = await fetch("/api/parse-resume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: rawText }),
+        });
+      }
       const payload = (await response.json()) as { data?: ResumeData; error?: string; resetAt?: string };
 
       if (!response.ok || !payload.data) {
@@ -822,6 +843,7 @@ export function ResumeTool() {
 
   function handleLoadExample() {
     setRawText(samplePrompt);
+    setUploadedCvFile(null);
     setData(parseCandidateText(samplePrompt));
     setHasCanvas(true);
     setAiError("");
