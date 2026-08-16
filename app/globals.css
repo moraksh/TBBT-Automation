@@ -591,7 +591,7 @@ a {
   align-items: center;
   justify-content: flex-start;
   padding-top: 0;
-  max-height: calc(100vh - 230px);
+  max-height: calc(100vh - 178px);
   min-height: calc(1123px * var(--preview-scale));
   overflow: auto;
   scroll-margin-top: 12px;

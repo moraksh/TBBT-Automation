@@ -202,13 +202,13 @@ Rules:
   - Responsibility or delivery point
   - Responsibility or delivery point
 - Keep each bullet under 22 words where possible.
-- For Alignment with the role applying:
+- For Alignment with the role:
   - If no job description is provided, write a short generic alignment based only on the candidate profile.
-  - If a job description is provided, write around 2-3 concise sentences explaining why the candidate fits that role.
+  - If a job description is provided, write only 1-2 short lines explaining why the candidate fits that role.
   - Use only facts present in the candidate information.
   - Use the job description only to identify matching requirements.
   - Do not invent experience, skills, tools, industries, locations, certifications, or achievements.
-  - Keep it short, client-ready, and specific.
+  - Keep it short, crisp, client-ready, and specific.
 - Do not paste the full raw text as one block.
 - Return JSON only.${backupText}${jdText}`;
 }

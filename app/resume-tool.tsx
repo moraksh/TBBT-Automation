@@ -88,7 +88,7 @@ MBA, Human Resources
 Technology / Additional Skills / Language:
 LinkedIn Recruiter, Greenhouse, Workday, English, Hindi
 
-Alignment with the role applying:
+Alignment with the role:
 Strong match for recruitment automation, client communication, and shortlist delivery.`;
 
 const sectionMap: Array<[keyof ResumeData, string[]]> = [
@@ -473,7 +473,7 @@ function buildWordDocument({
   if (achievements.length) children.push(docHeading("Achievements"), ...achievements.map(docBullet));
   if (education.length) children.push(docHeading("Education / Certification / Qualifications"), ...education.map((item) => docParagraph(item)));
   if (data.additionalSkills) children.push(docHeading("Technology / Additional Skills / Language"), docParagraph(data.additionalSkills));
-  if (data.alignment) children.push(docHeading("Alignment with the role applying"), docParagraph(data.alignment));
+  if (data.alignment) children.push(docHeading("Alignment with the role"), docParagraph(data.alignment));
 
   return new Document({
     numbering: {
@@ -1037,7 +1037,7 @@ function buildResumeUnits({
     }),
   );
   if (data.additionalSkills) units.push({ id: "additional-skills", kind: "paragraph", title: "Technology / Additional Skills / Language", text: data.additionalSkills });
-  if (data.alignment) units.push({ id: "alignment", kind: "paragraph", title: "Alignment with the role applying", text: data.alignment });
+  if (data.alignment) units.push({ id: "alignment", kind: "paragraph", title: "Alignment with the role", text: data.alignment });
 
   return units.map((unit) => ({ ...unit, forcePageBreakBefore: forcedPageBreakIds.includes(unit.id) }));
 }
