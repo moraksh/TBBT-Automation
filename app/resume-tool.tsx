@@ -507,33 +507,9 @@ function buildWordDocument({
   });
 }
 
-function TextField({
-  label,
-  field,
-  data,
-  setData,
-  rows = 2,
-}: {
-  label: string;
-  field: keyof ResumeData;
-  data: ResumeData;
-  setData: (data: ResumeData) => void;
-  rows?: number;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <textarea
-        rows={rows}
-        value={data[field]}
-        onChange={(event) => setData({ ...data, [field]: event.target.value })}
-      />
-    </label>
-  );
-}
-
 export function ResumeTool() {
   const [rawText, setRawText] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [data, setData] = useState<ResumeData>(emptyResume);
   const [layout, setLayout] = useState<"full" | "blind">("full");
   const [photo, setPhoto] = useState("");
@@ -767,7 +743,7 @@ export function ResumeTool() {
       const response = await fetch("/api/parse-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: rawText }),
+        body: JSON.stringify({ text: rawText, jobDescription }),
       });
       const payload = (await response.json()) as { data?: ResumeData; error?: string; resetAt?: string };
 
@@ -851,6 +827,17 @@ export function ResumeTool() {
             />
           </label>
 
+          <label className="field">
+            <span>Job description (optional)</span>
+            <textarea
+              className="jd-input"
+              rows={7}
+              value={jobDescription}
+              onChange={(event) => setJobDescription(event.target.value)}
+              placeholder="Paste the role requirements here. If left blank, alignment will be written from the candidate profile only."
+            />
+          </label>
+
           <div className="button-row">
             <button type="button" className="primary-button" onClick={handleAiParse} disabled={isAiParsing}>
               {isAiParsing ? "Reading with AI..." : "AI auto-fill"}
@@ -892,24 +879,6 @@ export function ResumeTool() {
               {isMobileProofingOpen ? "Hide proofing" : "Show proofing"}
             </button>
           ) : null}
-
-          <div className="field-grid">
-            <TextField label="Candidate Name" field="candidateName" data={data} setData={setData} />
-            <TextField label="Current Title / Position" field="title" data={data} setData={setData} />
-            <TextField label="Location" field="location" data={data} setData={setData} />
-            <TextField label="Phone" field="phone" data={data} setData={setData} />
-            <TextField label="Email" field="email" data={data} setData={setData} />
-            <TextField label="LinkedIn" field="linkedin" data={data} setData={setData} />
-          </div>
-
-          <TextField label="Executive Summary" field="summary" data={data} setData={setData} rows={4} />
-          <TextField label="Career Highlights" field="highlights" data={data} setData={setData} rows={4} />
-          <TextField label="Core Expertise" field="expertise" data={data} setData={setData} rows={3} />
-          <TextField label="Professional Experience" field="experience" data={data} setData={setData} rows={5} />
-          <TextField label="Achievements" field="achievements" data={data} setData={setData} rows={3} />
-          <TextField label="Education / Certification / Qualifications" field="education" data={data} setData={setData} rows={3} />
-          <TextField label="Technology / Additional Skills / Language" field="additionalSkills" data={data} setData={setData} rows={3} />
-          <TextField label="Alignment with the role applying" field="alignment" data={data} setData={setData} rows={3} />
         </div>
 
         <div className={`preview-panel ${isMobileProofingOpen ? "mobile-proofing-open" : ""}`}>
