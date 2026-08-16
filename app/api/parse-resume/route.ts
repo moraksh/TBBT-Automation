@@ -137,6 +137,9 @@ function normalizeResumeData(value: unknown): ResumeData {
       .replace(/\bwww\.\s*linkedin\.\s*com/gi, "www.linkedin.com")
       .replace(/\blinkedin\.\s*com/gi, "linkedin.com")
       .replace(/\b(https?:\/\/)\s+/gi, "$1")
+      .replace(/((?:https?:\/\/)?(?:www\.)?linkedin\.com\/(?:in|pub|company)\/[A-Za-z0-9._%+-]+(?:\s+[a-z0-9][A-Za-z0-9._%+-]*)*)/g, (url) =>
+        url.replace(/\s+/g, "-"),
+      )
       .replace(/\u00a0/g, " ")
       .replace(/\s*[\u2022•]\s*/g, "\n- ")
       .replace(/([.!?])(?=[A-Z])/g, "$1 ")
