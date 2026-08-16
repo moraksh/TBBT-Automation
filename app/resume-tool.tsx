@@ -146,13 +146,26 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function blindNameVariants(candidateName: string) {
+  const normalizedName = normalizeResumeText(candidateName)
+    .replace(/[,\s]+/g, " ")
+    .trim();
+  const withoutCredentials = normalizedName
+    .replace(/\b(?:CIA|CSOE|CISA|CISM|CPA|CA|ACCA|MBA|PMP|CFA|CFE)\b\.?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  const firstTwoWords = withoutCredentials.split(/\s+/).slice(0, 2).join(" ").trim();
+
+  return Array.from(new Set([normalizedName, withoutCredentials, firstTwoWords].filter((item) => item.length > 2)));
+}
+
 function scrubBlindText(value: string, data: ResumeData) {
   let safeText = normalizeResumeText(value);
   const privateValues = [data.email, data.linkedin, data.phone].filter(Boolean);
 
-  if (data.candidateName) {
-    safeText = safeText.replace(new RegExp(`\\b${escapeRegExp(data.candidateName)}\\b`, "gi"), "The candidate");
-  }
+  blindNameVariants(data.candidateName).forEach((name) => {
+    safeText = safeText.replace(new RegExp(`\\b${escapeRegExp(name)}\\b`, "gi"), "The candidate");
+  });
 
   privateValues.forEach((privateValue) => {
     safeText = safeText.replace(new RegExp(escapeRegExp(privateValue), "gi"), "");
@@ -468,6 +481,7 @@ function buildWordDocument({
   education: string[];
 }) {
   const children: Array<Paragraph | Table> = [];
+  const blindText = (text: string) => (isBlind ? scrubBlindText(text, data) : text);
 
   if (showLogo) {
     children.push(
@@ -482,7 +496,7 @@ function buildWordDocument({
 
   if (isBlind) {
     children.push(docHeading("Confidential"));
-    if (data.title) children.push(docParagraph(data.title));
+    if (data.title) children.push(docParagraph(blindText(data.title)));
   } else {
     children.push(docHeading(data.candidateName));
     if (data.title) children.push(docParagraph(data.title));
@@ -490,10 +504,10 @@ function buildWordDocument({
   if (contactDetails.length) children.push(docParagraph(contactDetails.join(" | ")));
 
   if (data.summary) {
-    children.push(docHeading("Executive Summary"), docParagraph(data.summary));
+    children.push(docHeading("Executive Summary"), docParagraph(blindText(data.summary)));
   }
   if (highlights.length) {
-    children.push(docHeading("Career Highlights"), docParagraph(highlights.join(" ")));
+    children.push(docHeading("Career Highlights"), docParagraph(blindText(highlights.join(" "))));
   }
   if (expertise.length) {
     const rows = [];
@@ -512,7 +526,7 @@ function buildWordDocument({
                   left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
                   right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
                 },
-                children: [docParagraph(skill)],
+                children: [docParagraph(blindText(skill))],
               }),
           ),
         }),
@@ -525,7 +539,7 @@ function buildWordDocument({
     let companyCount = 0;
     experience.forEach((item) => {
       const isBullet = isExperienceBullet(item);
-      const text = item.replace(/^[-*\u2022\s]+/, "").trim();
+      const text = blindText(item.replace(/^[-*\u2022\s]+/, "").trim());
       const isCompanyLine = isCompanyExperienceLine(text);
       if (isBullet) {
         children.push(docBullet(text));
@@ -540,10 +554,10 @@ function buildWordDocument({
       if (isCompanyLine) companyCount += 1;
     });
   }
-  if (achievements.length) children.push(docHeading("Achievements"), ...achievements.map(docBullet));
-  if (education.length) children.push(docHeading("Education / Certification / Qualifications"), ...education.map((item) => docParagraph(item)));
-  if (data.additionalSkills) children.push(docHeading("Technology / Additional Skills / Language"), docParagraph(data.additionalSkills));
-  if (data.alignment) children.push(docHeading("Alignment with the role"), docParagraph(isBlind ? scrubBlindText(data.alignment, data) : data.alignment));
+  if (achievements.length) children.push(docHeading("Achievements"), ...achievements.map((item) => docBullet(blindText(item))));
+  if (education.length) children.push(docHeading("Education / Certification / Qualifications"), ...education.map((item) => docParagraph(blindText(item))));
+  if (data.additionalSkills) children.push(docHeading("Technology / Additional Skills / Language"), docParagraph(blindText(data.additionalSkills)));
+  if (data.alignment) children.push(docHeading("Alignment with the role"), docParagraph(blindText(data.alignment)));
 
   return new Document({
     numbering: {
@@ -1188,6 +1202,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
   );
   const headingPageBreakAction = unit.title ? pageBreakAction : null;
   const inlinePageBreakAction = unit.title ? null : pageBreakAction;
+  const blindText = (text: string) => (isBlind ? scrubBlindText(text, data) : text);
 
   if (unit.kind === "intro") {
     const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
@@ -1255,7 +1270,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
                   if (event.key === "Backspace" && event.currentTarget.innerText.trim() === "") removeListItem("expertise", index);
                 }}
               >
-                {skill}
+                {blindText(skill)}
               </span>
             ))}
           </div>
@@ -1270,7 +1285,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
     const item = items[index] || unit.text || "";
     const isBullet = isExperienceBullet(item);
     const isCompanyLine = isCompanyExperienceLine(item);
-    const text = item.replace(/^[-*\u2022\s]+/, "").trim();
+    const text = blindText(item.replace(/^[-*\u2022\s]+/, "").trim());
 
     return (
       <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
@@ -1303,7 +1318,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
         : "education";
     const index = Number(unit.id.split("-").at(-1));
     const items = listForUnit(field);
-    const value = items[index] || unit.text || "";
+    const value = blindText(items[index] || unit.text || "");
 
     return (
       <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
@@ -1330,7 +1345,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
 
   const field = unit.id === "summary" ? "summary" : unit.id === "additional-skills" ? "additionalSkills" : unit.id === "alignment" ? "alignment" : null;
   if (field) {
-    const displayText = field === "alignment" && isBlind ? scrubBlindText(data[field], data) : data[field];
+    const displayText = blindText(data[field]);
     return (
       <ResumeSection title={forceTitle || unit.title} actions={headingPageBreakAction}>
         <div className="editable-resume-block">
