@@ -694,8 +694,15 @@ a {
 }
 
 .candidate-intro {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
   padding: 42px 0 0;
+}
+
+.resume-page.no-tbbt-logo .candidate-intro {
+  padding-top: 4px;
 }
 
 .candidate-intro h3 {

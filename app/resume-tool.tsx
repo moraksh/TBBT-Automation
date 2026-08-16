@@ -379,6 +379,7 @@ function buildWordDocument({
   isBlind,
   contactDetails,
   logoData,
+  showLogo,
   expertise,
   highlights,
   experience,
@@ -389,20 +390,25 @@ function buildWordDocument({
   isBlind: boolean;
   contactDetails: string[];
   logoData?: Uint8Array;
+  showLogo: boolean;
   expertise: string[];
   highlights: string[];
   experience: string[];
   achievements: string[];
   education: string[];
 }) {
-  const children: Array<Paragraph | Table> = [
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      children: logoData
-        ? [new ImageRun({ data: logoData, type: "png", transformation: { width: 164, height: 32 } })]
-        : [docText("THE BLACKBOX TALENT", { bold: true, size: 22 })],
-    }),
-  ];
+  const children: Array<Paragraph | Table> = [];
+
+  if (showLogo) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        children: logoData
+          ? [new ImageRun({ data: logoData, type: "png", transformation: { width: 164, height: 32 } })]
+          : [docText("THE BLACKBOX TALENT", { bold: true, size: 22 })],
+      }),
+    );
+  }
 
   if (isBlind) {
     children.push(docHeading("Confidential"));
@@ -536,12 +542,10 @@ export function ResumeTool() {
   const [hasCanvas, setHasCanvas] = useState(false);
   const [isMobileProofingOpen, setIsMobileProofingOpen] = useState(false);
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
-  const [isExtractingCv, setIsExtractingCv] = useState(false);
-  const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
+  const [showTbbtLogo, setShowTbbtLogo] = useState(true);
   const [forcedPageBreakIds, setForcedPageBreakIds] = useState<string[]>([]);
   const [pageBreakHistory, setPageBreakHistory] = useState<string[][]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cvInputRef = useRef<HTMLInputElement>(null);
   const previewDocumentRef = useRef<HTMLDivElement>(null);
 
   const isBlind = layout === "blind";
@@ -739,41 +743,6 @@ export function ResumeTool() {
     reader.readAsDataURL(file);
   }
 
-  async function handleCvUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    setAiError("");
-    setIsExtractingCv(true);
-    setUploadedCvFile(file);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/extract-cv", {
-        method: "POST",
-        body: formData,
-      });
-      const payload = (await response.json()) as { text?: string; error?: string; resetAt?: string };
-
-      if (!response.ok || !payload.text) {
-        const resetTime = payload.resetAt ? ` Try again after ${formatResetTime(payload.resetAt)}.` : "";
-        setAiError(`${payload.error || "Could not read this CV. Try a PDF, DOCX, image, or text file."}${resetTime}`);
-        return;
-      }
-
-      setRawText(payload.text);
-      setData(parseCandidateText(payload.text));
-      setHasCanvas(true);
-    } catch {
-      setAiError("CV upload could not be read right now. Try copy-pasting the candidate details.");
-    } finally {
-      setIsExtractingCv(false);
-    }
-  }
-
   function formatResetTime(resetAt: string) {
     const date = new Date(resetAt);
     if (Number.isNaN(date.getTime())) return "";
@@ -788,37 +757,18 @@ export function ResumeTool() {
   async function handleAiParse() {
     setAiError("");
 
-    if (!rawText.trim() && !uploadedCvFile) {
+    if (!rawText.trim()) {
       setAiError("Paste candidate information before using AI auto-fill.");
       return;
     }
 
     setIsAiParsing(true);
     try {
-      const shouldSendFile =
-        uploadedCvFile &&
-        (
-          uploadedCvFile.type === "application/pdf" ||
-          uploadedCvFile.type.startsWith("image/") ||
-          /\.(pdf|jpg|jpeg|png|webp)$/i.test(uploadedCvFile.name)
-        );
-      let response: Response;
-
-      if (shouldSendFile) {
-        const formData = new FormData();
-        formData.append("file", uploadedCvFile);
-        formData.append("text", rawText);
-        response = await fetch("/api/parse-resume", {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        response = await fetch("/api/parse-resume", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: rawText }),
-        });
-      }
+      const response = await fetch("/api/parse-resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: rawText }),
+      });
       const payload = (await response.json()) as { data?: ResumeData; error?: string; resetAt?: string };
 
       if (!response.ok || !payload.data) {
@@ -841,20 +791,14 @@ export function ResumeTool() {
     setHasCanvas(true);
   }
 
-  function handleLoadExample() {
-    setRawText(samplePrompt);
-    setUploadedCvFile(null);
-    setData(parseCandidateText(samplePrompt));
-    setHasCanvas(true);
-    setAiError("");
-  }
-
   async function handleDownloadWord() {
-    const logoData = await fetch("/tbbt-logo.png")
-      .then((response) => response.arrayBuffer())
-      .then((buffer) => new Uint8Array(buffer))
-      .catch(() => undefined);
-    const document = buildWordDocument({ data, isBlind, contactDetails, logoData, expertise, highlights, experience, achievements, education });
+    const logoData = showTbbtLogo
+      ? await fetch("/tbbt-logo.png")
+          .then((response) => response.arrayBuffer())
+          .then((buffer) => new Uint8Array(buffer))
+          .catch(() => undefined)
+      : undefined;
+    const document = buildWordDocument({ data, isBlind, contactDetails, logoData, showLogo: showTbbtLogo, expertise, highlights, experience, achievements, education });
     const blob = await Packer.toBlob(document);
     downloadBlob(blob, `${safeFilename(isBlind ? data.title : data.candidateName)}.docx`);
   }
@@ -907,26 +851,20 @@ export function ResumeTool() {
             />
           </label>
 
-          <input
-            ref={cvInputRef}
-            className="hidden-file"
-            type="file"
-            accept=".pdf,.docx,.txt,.text,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/jpeg,image/png,image/webp"
-            onChange={handleCvUpload}
-          />
-
           <div className="button-row">
-            <button type="button" className="ghost-button" onClick={() => cvInputRef.current?.click()} disabled={isExtractingCv}>
-              {isExtractingCv ? "Reading CV..." : "Upload CV"}
-            </button>
             <button type="button" className="primary-button" onClick={handleAiParse} disabled={isAiParsing}>
               {isAiParsing ? "Reading with AI..." : "AI auto-fill"}
             </button>
             <button type="button" className="ghost-button" onClick={handleBasicParse}>
               Basic auto-fill
             </button>
-            <button type="button" className="ghost-button" onClick={handleLoadExample}>
-              Load example
+            <button
+              type="button"
+              aria-pressed={showTbbtLogo}
+              className={showTbbtLogo ? "primary-button" : "ghost-button"}
+              onClick={() => setShowTbbtLogo((isVisible) => !isVisible)}
+            >
+              TBBT Logo
             </button>
           </div>
           {aiError ? <p className="tool-error">{aiError}</p> : null}
@@ -978,7 +916,7 @@ export function ResumeTool() {
           {!hasCanvas ? (
             <div className="canvas-empty">
               <strong>Paste the candidate information</strong>
-              <p>Use AI auto-fill, Basic auto-fill, or Load example to create the proofing canvas.</p>
+              <p>Use AI auto-fill or Basic auto-fill to create the proofing canvas.</p>
             </div>
           ) : (
             <>
@@ -1026,8 +964,8 @@ export function ResumeTool() {
                       </div>
                     ))}
                 </div>
-                <article className="resume-page measure-shell" aria-hidden="true">
-                  <ResumeHeader />
+                <article className={`resume-page measure-shell ${showTbbtLogo ? "" : "no-tbbt-logo"}`} aria-hidden="true">
+                  {showTbbtLogo ? <ResumeHeader /> : null}
                   <div className="resume-page-body" ref={firstPageBodyRef} />
                 </article>
                 <article className="resume-page measure-shell" aria-hidden="true">
@@ -1036,8 +974,8 @@ export function ResumeTool() {
 
                 {(pages.length ? pages : [resumeUnits]).map((pageUnits, index) => (
                   <div className="resume-page-frame" key={`page-${index}`}>
-                    <article className="resume-page" aria-label={`Resume preview page ${index + 1}`}>
-                      {index === 0 ? <ResumeHeader /> : null}
+                    <article className={`resume-page ${index === 0 && !showTbbtLogo ? "no-tbbt-logo" : ""}`} aria-label={`Resume preview page ${index + 1}`}>
+                      {index === 0 && showTbbtLogo ? <ResumeHeader /> : null}
                       <div
                         className="resume-page-body"
                         ref={(node) => {
@@ -1099,7 +1037,7 @@ function buildResumeUnits({
       name: isBlind ? "Confidential" : data.candidateName,
       title: data.title,
       contact: contactDetails.join(" | "),
-      photo: "",
+      photo: isBlind ? "" : photo,
     }),
   });
 
@@ -1218,6 +1156,11 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
           ) : null}
           {intro.contact ? <p className="contact-line">{intro.contact}</p> : null}
         </div>
+        {intro.photo ? (
+          <div className="photo-frame">
+            <img className="candidate-photo" src={intro.photo} alt="Candidate" />
+          </div>
+        ) : null}
       </section>
     );
   }
