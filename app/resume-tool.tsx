@@ -56,6 +56,8 @@ const emptyResume: ResumeData = {
   alignment: "",
 };
 
+const DESKTOP_PREVIEW_START_OFFSET = 250;
+
 const samplePrompt = `Paste candidate notes here. Example:
 Name: Priya Sharma
 Current Title: Senior Talent Acquisition Manager
@@ -798,7 +800,7 @@ export function ResumeTool() {
 
   useEffect(() => {
     if (!hasCanvas) return;
-    previewDocumentRef.current?.scrollTo({ top: 0, left: 0 });
+    requestAnimationFrame(() => scrollPreviewToStart());
   }, [hasCanvas, layout, mobilePreviewScale]);
 
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -897,8 +899,18 @@ export function ResumeTool() {
   }
 
   function scrollToPreviewDocument() {
-    previewDocumentRef.current?.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    scrollPreviewToStart("smooth");
     previewDocumentRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }
+
+  function scrollPreviewToStart(behavior: ScrollBehavior = "auto") {
+    const preview = previewDocumentRef.current;
+    if (!preview) return;
+
+    const isMobile = typeof window !== "undefined" && window.innerWidth <= 720;
+    const maxScrollTop = Math.max(0, preview.scrollHeight - preview.clientHeight);
+    const targetTop = isMobile ? 0 : Math.min(maxScrollTop, Math.round(DESKTOP_PREVIEW_START_OFFSET * mobilePreviewScale));
+    preview.scrollTo({ top: targetTop, left: 0, behavior });
   }
 
   return (
