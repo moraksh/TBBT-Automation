@@ -92,10 +92,10 @@ Alignment with the role applying:
 Strong match for recruitment automation, client communication, and shortlist delivery.`;
 
 const sectionMap: Array<[keyof ResumeData, string[]]> = [
-  ["summary", ["executive summary", "summary"]],
+  ["summary", ["executive profile", "executive summary", "summary"]],
   ["highlights", ["career highlights", "highlights"]],
-  ["expertise", ["core expertise", "expertise"]],
-  ["experience", ["professional experience", "experience"]],
+  ["expertise", ["core competencies", "core expertise", "expertise"]],
+  ["experience", ["professional experience", "work experience", "experience"]],
   ["achievements", ["achievements", "achievement"]],
   ["education", ["education", "certification", "qualifications"]],
   ["additionalSkills", ["technology", "additional skills", "language", "skills"]],
@@ -103,7 +103,36 @@ const sectionMap: Array<[keyof ResumeData, string[]]> = [
 ];
 
 function cleanValue(value: string) {
-  return value.replace(/^[\s:|-]+/, "").trim();
+  return normalizeResumeText(value).replace(/^[\s:|-]+/, "").trim();
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function normalizeResumeText(value: string) {
+  return decodeHtmlEntities(value)
+    .replace(/\u00a0/g, " ")
+    .replace(/\s*[\u2022•]\s*/g, "\n- ")
+    .replace(/([.!?])(?=[A-Z])/g, "$1 ")
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/([,.;:])(?=\S)/g, "$1 ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function cleanResumeLine(value: string) {
+  return normalizeResumeText(value)
+    .replace(/^(key\s+)?highlights?\s*:\s*/i, "")
+    .replace(/^(responsibilities|my responsibilities|duties|achievements?)\s*:\s*/i, "")
+    .trim();
 }
 
 function findLineValue(text: string, labels: string[]) {
@@ -122,25 +151,24 @@ function extractSection(text: string, labels: string[]) {
   const lines = text.split(/\r?\n/);
   const labelPatterns = sectionMap.flatMap(([, aliases]) => aliases);
   let start = -1;
+  const result: string[] = [];
 
   for (let i = 0; i < lines.length; i += 1) {
     const normalized = lines[i].trim().replace(/:$/, "").toLowerCase();
-    const isSectionHeader = labels.some(
-      (label) =>
-        normalized === label ||
-        normalized.startsWith(`${label}:`) ||
-        normalized.startsWith(`${label} /`) ||
-        normalized.startsWith(`${label} `),
+    const sectionLabel = labels.find(
+      (label) => normalized === label || normalized.startsWith(`${label}:`) || normalized.startsWith(`${label} /`) || normalized.startsWith(`${label} `),
     );
+    const isSectionHeader = Boolean(sectionLabel);
     if (isSectionHeader) {
       start = i + 1;
+      const sameLineValue = cleanValue(lines[i].slice(sectionLabel?.length || 0));
+      if (sameLineValue) result.push(sameLineValue);
       break;
     }
   }
 
   if (start < 0) return "";
 
-  const result: string[] = [];
   for (let i = start; i < lines.length; i += 1) {
     const normalized = lines[i].trim().replace(/:$/, "").toLowerCase();
     const isNextSection = labelPatterns.some(
@@ -161,33 +189,66 @@ function inferName(text: string) {
   const explicit = findLineValue(text, ["name", "candidate name"]);
   if (explicit) return explicit;
 
+  const ignoredLines = new Set([
+    "contact",
+    "languages",
+    "language",
+    "summary",
+    "executive summary",
+    "executive profile",
+    "core expertise",
+    "core competencies",
+    "experience",
+    "professional experience",
+  ]);
+
   const firstUsefulLine = text
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .find((line) => line && !line.includes("@") && !line.toLowerCase().startsWith("summary"));
+    .find((line) => {
+      const normalized = line.toLowerCase().replace(/:$/, "");
+      if (!line || ignoredLines.has(normalized)) return false;
+      if (line.includes("@") || /linkedin\.com|https?:\/\//i.test(line)) return false;
+      if (/^(english|french|arabic|hindi|urdu|spanish|german|mandarin|cantonese)\b/i.test(line)) return false;
+      if (/^page \d+ of \d+$/i.test(line)) return false;
+      return line.split(/\s+/).length >= 2;
+    });
 
   return firstUsefulLine || "";
 }
 
 function parseCandidateText(text: string): ResumeData {
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-  const phone = text.match(/(?:\+\d{1,3}[\s-]?)?(?:\(?\d{2,4}\)?[\s-]?){2,5}\d{2,4}/)?.[0] || "";
-  const linkedin = text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[^\s,]+/i)?.[0] || "";
+  const normalizedText = normalizeResumeText(text);
+  const email = normalizedText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  const phone = normalizedText.match(/(?:\+\d{1,3}[\s-]?)?(?:\(?\d{2,4}\)?[\s-]?){2,5}\d{2,4}/)?.[0] || "";
+  const linkedin = normalizedText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[^\s,]+/i)?.[0] || "";
 
   const parsed = { ...emptyResume };
-  parsed.candidateName = inferName(text);
-  parsed.title = findLineValue(text, ["current title", "title", "position", "role"]);
-  parsed.location = findLineValue(text, ["location", "geography"]);
-  parsed.phone = findLineValue(text, ["phone", "mobile", "m"]) || phone;
-  parsed.email = findLineValue(text, ["email"]) || email;
-  parsed.linkedin = findLineValue(text, ["linkedin"]) || linkedin;
+  parsed.candidateName = inferName(normalizedText);
+  parsed.title = findLineValue(normalizedText, ["current title", "title", "position", "role"]);
+  parsed.location = findLineValue(normalizedText, ["location", "geography"]);
+  parsed.phone = findLineValue(normalizedText, ["phone", "mobile", "m"]) || phone;
+  parsed.email = findLineValue(normalizedText, ["email"]) || email;
+  parsed.linkedin = findLineValue(normalizedText, ["linkedin"]) || linkedin;
 
   for (const [key, labels] of sectionMap) {
-    parsed[key] = extractSection(text, labels);
+    parsed[key] = extractSection(normalizedText, labels);
+  }
+
+  const normalizedLines = normalizedText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const nameIndex = normalizedLines.findIndex((line) => line === parsed.candidateName);
+  if (nameIndex >= 0) {
+    const nextLine = normalizedLines[nameIndex + 1] || "";
+    const followingLine = normalizedLines[nameIndex + 2] || "";
+    if (!parsed.title && nextLine && !nextLine.includes("@") && !/linkedin\.com|^page \d+ of \d+$/i.test(nextLine)) parsed.title = nextLine;
+    if (!parsed.location && followingLine && /,/.test(followingLine)) parsed.location = followingLine;
   }
 
   if (!parsed.summary) {
-    parsed.summary = text
+    parsed.summary = normalizedText
       .split(/\r?\n/)
       .filter((line) => line.trim().length > 35)
       .slice(0, 2)
@@ -198,22 +259,25 @@ function parseCandidateText(text: string): ResumeData {
 }
 
 function toList(value: string, splitCommas = false) {
-  const splitter = splitCommas ? /\r?\n|;|,/ : /\r?\n|;/;
-  return value
+  const splitter = splitCommas ? /\r?\n|;|,|\s\|\s/ : /\r?\n|;/;
+  return normalizeResumeText(value)
     .split(splitter)
-    .map((line) => line.replace(/^[-*\u2022\d.)\s]+/, "").trim())
+    .map((line) => cleanResumeLine(line).replace(/^[-*\u2022\d.)\s]+/, "").trim())
     .filter(Boolean);
 }
 
 function toLines(value: string) {
-  return value
+  return normalizeResumeText(value)
     .split(/\r?\n|;/)
-    .map((line) => line.trim())
+    .map((line) => {
+      const bulletPrefix = /^[-*\u2022]/.test(line.trim()) ? "- " : "";
+      return `${bulletPrefix}${cleanResumeLine(line).replace(/^[-*\u2022\s]+/, "")}`.trim();
+    })
     .filter(Boolean);
 }
 
 function listToField(items: string[]) {
-  return items.map((item) => item.trim()).filter(Boolean).join("\n");
+  return items.map((item) => normalizeResumeText(item).trim()).filter(Boolean).join("\n");
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -266,7 +330,10 @@ function docBullet(text: string) {
 }
 
 function isExperienceBullet(item: string) {
-  return /^[-*\u2022]/.test(item) || /^(managed|developed|led|created|implemented|coordinated|collaborated|worked|supported|delivered|improved|built|designed|provided|discussed|promoted|converted|maintained|documented|supervised|oversaw|prepared|monitored|conducted|inspected)\b/i.test(item);
+  return (
+    /^[-*\u2022]/.test(item) ||
+    /^(achieved|advised|applied|assessed|built|collaborated|conducted|converted|coordinated|created|defined|delivered|designed|developed|directed|discussed|drove|embedded|ensured|established|executed|fostered|identified|implemented|improved|introduced|lead|led|leveraged|maintained|managed|monitored|optimised|optimized|oversaw|owned|partnered|played|prepared|promoted|provided|raised|resolved|revamped|reviewed|served|streamlined|strengthened|supported|supervised|worked)\b/i.test(item)
+  );
 }
 
 function isCompanyExperienceLine(item: string) {
@@ -305,8 +372,13 @@ function buildWordDocument({
     }),
   ];
 
-  children.push(docParagraph(isBlind ? "Confidential" : data.candidateName.toUpperCase(), true));
-  if (data.title) children.push(docParagraph(data.title.toUpperCase(), true));
+  if (isBlind) {
+    children.push(docHeading("Confidential"));
+    if (data.title) children.push(docParagraph(data.title));
+  } else {
+    children.push(docHeading(data.candidateName));
+    if (data.title) children.push(docParagraph(data.title));
+  }
   if (contactDetails.length) children.push(docParagraph(contactDetails.join(" | ")));
 
   if (data.summary) {
@@ -1070,7 +1142,7 @@ function EditableResumeUnitContent({ unit, forceTitle, data, isBlind, setData, t
   if (unit.kind === "intro") {
     const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
     return (
-      <section className="candidate-intro editable-resume-block">
+      <section className={`candidate-intro editable-resume-block ${isBlind ? "blind-intro" : ""}`}>
         <div>
           {intro.name ? (
             <h3
@@ -1212,7 +1284,7 @@ function ResumeUnitContent({ unit, forceTitle }: { unit: ResumeUnit; forceTitle?
   if (unit.kind === "intro") {
     const intro = JSON.parse(unit.text || "{}") as { name?: string; title?: string; contact?: string; photo?: string };
     return (
-      <section className="candidate-intro">
+      <section className={`candidate-intro ${intro.name === "Confidential" ? "blind-intro" : ""}`}>
         <div>
           {intro.name ? <h3>{intro.name}</h3> : null}
           {intro.title ? <p>{intro.title}</p> : null}

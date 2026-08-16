@@ -700,10 +700,10 @@ a {
 
 .candidate-intro h3 {
   margin: 0;
-  color: #000000;
-  font-size: 13px;
+  color: #6d1265;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: 0;
 }
 
@@ -711,7 +711,7 @@ a {
   margin: 7px 0 0;
   color: #000000;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.25;
 }
 

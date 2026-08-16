@@ -103,12 +103,30 @@ function getNextPacificMidnightIso() {
 function normalizeResumeData(value: unknown): ResumeData {
   if (!value || typeof value !== "object") return emptyResume;
 
+  function cleanText(rawValue: string) {
+    return rawValue
+      .replace(/&amp;/gi, "&")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&quot;/gi, "\"")
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s*[\u2022•]\s*/g, "\n- ")
+      .replace(/([.!?])(?=[A-Z])/g, "$1 ")
+      .replace(/\s+([,.;:])/g, "$1")
+      .replace(/([,.;:])(?=\S)/g, "$1 ")
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
   const source = value as Partial<Record<keyof ResumeData, unknown>>;
   return Object.fromEntries(
     Object.keys(emptyResume).map((key) => {
       const field = key as keyof ResumeData;
       const rawValue = source[field];
-      return [field, typeof rawValue === "string" ? rawValue.trim() : ""];
+      return [field, typeof rawValue === "string" ? cleanText(rawValue) : ""];
     }),
   ) as ResumeData;
 }
@@ -165,6 +183,9 @@ Rules:
 - If a field is missing, return an empty string.
 - Do not return paragraphs copied as-is from the pasted data, but keep all facts while rewriting lightly.
 - Convert responsibilities and achievements into short action-oriented bullets without changing the facts.
+- Do not join words together. Preserve correct spaces between words, for example "give senior", "control environment", "built and", and "control frameworks".
+- Never return HTML entities such as &amp;. Return normal characters such as &, /, (, and ).
+- Put every bullet or bullet-like item on its own new line. If the source has "Key highlights: • item • item", remove the "Key highlights:" label and return each item as a separate bullet line.
 - Career Highlights should be a professional paragraph or concise lines only when the source gives multiple distinct facts. Do not add bullet symbols.
 - Remove labels from skill names, for example convert "Languages: RPG/400" to "RPG/400".
 - Core Expertise must preserve all explicit skills, competencies, frameworks, domains, tools, and technologies listed under headings such as Core Expertise, Core Competencies, Skills, Technical Skills, or Areas of Expertise.
